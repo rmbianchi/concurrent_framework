@@ -1,0 +1,16 @@
+
+To Compile:
+===========
+
+on Mac/Linux:
+-------------
+
+Building file: ../dependency_graph.cpp
+Invoking: GCC C++ Compiler
+g++ -I/opt/intel/tbb/tbb40_20120201oss/include -I/opt/root/root_v5.26.00b_64bit_systempython/include -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"dependency_graph.d" -MT"dependency_graph.d" -o"dependency_graph.o" "../dependency_graph.cpp"
+
+Building target: concurrent_framework_demonstrator
+Invoking: MacOS X C++ Linker
+g++ -L/opt/intel/tbb/tbb40_20120201oss/lib -L/opt/root/root_v5.26.00b_64bit_systempython/lib `/opt/root/root_v5.26.00b_64bit_systempython/bin/root-config --libs` -o "concurrent_framework_demonstrator"  ./dependency_graph.o   -ltbb
+Finished building target: concurrent_framework_demonstrator
+
