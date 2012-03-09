@@ -63,8 +63,6 @@ private:
 	const char* m_name;
 	std::vector<AlgoBase*> m_algorithms;
 	unsigned int m_Nalgorithms;
-	//std::vector< continue_node<continue_msg>* > m_nodes;
-	//std::vector< function_node<continue_msg, continue_msg>* > m_nodes;
 	std::map<int, function_node< continue_msg, continue_msg >* > m_created_nodes;
 
 
@@ -73,14 +71,8 @@ private:
 	tbb::flow::graph* m_graph;
 	//broadcast_node< continue_msg >* m_start;
 
-	// subgraph nodes
-	continue_node<continue_msg>* m_algA;
-	continue_node<continue_msg>* m_algB;
-	continue_node<continue_msg>* m_algC;
-	continue_node<continue_msg>* m_algD;
-	continue_node<continue_msg>* m_algE;
+	// start nodes
 	broadcast_node< continue_msg >* m_startNode;
-	//tbb::flow::function_node< join_type::flow::output_type, tbb::flow::continue_msg > *my_function_node;
 
 	//friend class node_body;
 
@@ -133,9 +125,7 @@ void AlgoChain::make_my_node() {
 	printf("building nodes and edges...\n");
 	lock.release();
 
-
-
-
+	// loop over all algorithms scheduled for this job
 	for (unsigned int aa = 0; aa < m_Nalgorithms; ++aa) {
 
 		unsigned int algoN = aa;
@@ -189,6 +179,9 @@ void AlgoChain::make_my_node() {
 
 
 
+//===========================
+//		Scheduler
+//===========================
 int schedule(std::vector< std::vector<AlgoBase*> > chainsVec) {
 
 
@@ -206,7 +199,7 @@ int schedule(std::vector< std::vector<AlgoBase*> > chainsVec) {
 	printf("creating and starting the AlgoChains graphs\n");
 	std::vector< AlgoChain > chains;
 
-	// loop over chains
+	// loop over chains and runs the jobs
 	for (unsigned int ch = 0; ch < num_chains; ++ch) {
 		printf("instantiating Chain %u\n", ch);
 		chains.push_back( AlgoChain( chainNames[ch], g, chainsVec[ch]) );
@@ -216,7 +209,7 @@ int schedule(std::vector< std::vector<AlgoBase*> > chainsVec) {
 
 	tbb::spin_mutex::scoped_lock lock;
 
-	// wait for all completing
+	// wait for all jobs completing
 	lock.acquire(my_mutex);
 	printf("waiting for all completing\n");
 	lock.release();
