@@ -67,9 +67,8 @@ private:
 
 
 
-	// pointers to main graph elements
+	// pointer to main graph elements
 	tbb::flow::graph* m_graph;
-	//broadcast_node< continue_msg >* m_start;
 
 	// start nodes
 	broadcast_node< continue_msg >* m_startNode;
