@@ -8,6 +8,9 @@
 #ifndef ALGO_H_
 #define ALGO_H_
 
+// include internals
+#include "Whiteboard.h"
+
 // include c++
 # include <iostream>
 # include <cstdio>
@@ -18,11 +21,11 @@
  */
 class AlgoBase {
 public:
-
 	virtual void body() = 0;
 	virtual std::string getDataTypeIN() = 0;
 	virtual std::string getDataTypeOUT() = 0;
 	virtual const char* getName() = 0;
+	virtual void publishToWhiteboard() = 0;
 };
 
 
@@ -42,20 +45,34 @@ public:
 	std::string dataTypeIN;
 	std::string dataTypeOUT;
 
+	Whiteboard* m_wb;
+	MyClass mc;
+
 	/*
 	 * methods
 	 */
-	Algo(const char* name) : m_name(name) {printf("Instantiating %s\n", m_name);};
-	Algo(const char* name, std::string typeIN, std::string typeOUT) : m_name(name), dataTypeIN(typeIN), dataTypeOUT(typeOUT) {printf("Instantiating %s\n", m_name);};
-	Algo(const char* name, T1 in, T2 out) : m_name(name), dataIN(in), dataOUT(out) {};
+	Algo(Whiteboard* wb, const char* name) : m_name(name), m_wb(wb) {printf("Instantiating %s\n", m_name);};
+	Algo(Whiteboard* wb, const char* name, std::string typeIN, std::string typeOUT) : m_name(name), dataTypeIN(typeIN), dataTypeOUT(typeOUT), m_wb(wb) {printf("Instantiating %s\n", m_name);};
+	Algo(Whiteboard* wb, const char* name, T1 in, T2 out) : m_name(name), dataIN(in), dataOUT(out), m_wb(wb) {};
 	virtual ~Algo() {};
 
 	// actual implementations of the virtual methods
-	void body() {printf("body() of Algo '%s' - IN: %s - OUT: %s\n", m_name, dataTypeIN.c_str(), dataTypeOUT.c_str()); sleep(2);};
+	void body() {printf("Algo '%s' - body() - IN: %s - OUT: %s\n", m_name, dataTypeIN.c_str(), dataTypeOUT.c_str()); sleep(2);
+				 publishToWhiteboard();
+				 printf("\n");
+				};
 	std::string getDataTypeIN() {return dataTypeIN;};
 	std::string getDataTypeOUT() {return dataTypeOUT;};
 	const char* getName() {return m_name;};
+	void publishToWhiteboard() {printf("Algo '%s' - publishToWhiteboard()\n", m_name);
+								m_wb->insert_into_table(dataTypeOUT, mc);
+	                            };
+
 };
+
+
+
+
 
 
 

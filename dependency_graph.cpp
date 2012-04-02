@@ -11,6 +11,7 @@
 // include internals
 #include "Algo.h"
 #include "DataTypes.h"
+#include "Whiteboard.h"
 // include c++
 # include <iostream>
 # include <cstdio>
@@ -18,6 +19,7 @@
 // include tbb
 # include "tbb/task_scheduler_init.h"
 #include "tbb/flow_graph.h"
+#include "tbb/spin_mutex.h"
 
 using namespace std;
 using namespace tbb::flow;
@@ -50,20 +52,26 @@ static timestamp_t get_timestamp () {
 //		AlgoChain class
 //===========================
 
-class AlgoChain {
+class AlgoChain : public Subscriber {
 public:
-	AlgoChain(const char *name, tbb::flow::graph &the_graph, std::vector<AlgoBase*> algorithms) :
-		m_name(name), m_algorithms(algorithms), m_Nalgorithms(algorithms.size()), m_graph(&the_graph) {};
+	AlgoChain(Whiteboard* wb, const char *name, tbb::flow::graph &the_graph, std::vector<AlgoBase*> algorithms) :
+		m_name(name), m_algorithms(algorithms), m_Nalgorithms(algorithms.size()),
+		m_wb(wb), m_graph(&the_graph) {};
 	virtual ~AlgoChain() {};
 	void operator()();
+	const char* getName() {return m_name;};
+	void update(Whiteboard* who, const void* what = 0);
 
 
 private:
-	struct body;
+	//struct body;
 	const char* m_name;
 	std::vector<AlgoBase*> m_algorithms;
 	unsigned int m_Nalgorithms;
 	std::map<int, function_node< continue_msg, continue_msg >* > m_created_nodes;
+
+	// pointer to the Whiteboard instance
+	Whiteboard* m_wb;
 
 
 
@@ -88,19 +96,26 @@ void AlgoChain::operator()() {
 void AlgoChain::setup() {
 	printf("\t%s setting up\n", m_name );
 	sleep(setup_time);
+	printf("\t\t%s subscribe() to the Whiteboard's notifications\n", m_name );
+	m_wb->subscribe(this);
 	printf("\t%s done setup\n", m_name );
 }
 
+void AlgoChain::update(Whiteboard* who, const void* what)
+{
+	printf("\t%s - update() - Whiteboard %s notified the publication of product %s.\n", m_name, who->getName(), (char*)what );
+}
 
-struct AlgoChain::body {
-    std::string my_name;
-    std::string my_parentName;
-    body( const char *name, const char* parentName ) : my_name(name), my_parentName(parentName) {}
-    void operator()( continue_msg ) const {
-    	tbb::spin_mutex::scoped_lock lock(my_mutex);
-        printf("\t\t%s: algo %s\n", my_parentName.c_str(), my_name.c_str());
-    }
-};
+
+//struct AlgoChain::body {
+//    std::string my_name;
+//    std::string my_parentName;
+//    body( const char *name, const char* parentName ) : my_name(name), my_parentName(parentName) {}
+//    void operator()( continue_msg ) const {
+//    	tbb::spin_mutex::scoped_lock lock(my_mutex);
+//        printf("\t\t%s: algo %s\n", my_parentName.c_str(), my_name.c_str());
+//    }
+//};
 
 class node_body {
   AlgoBase* my_algorithm;
@@ -181,7 +196,7 @@ void AlgoChain::make_my_node() {
 //===========================
 //		Scheduler
 //===========================
-int schedule(std::vector< std::vector<AlgoBase*> > chainsVec) {
+int schedule(Whiteboard * wb, std::vector< std::vector<AlgoBase*> > chainsVec) {
 
 
 	unsigned int num_chains = chainsVec.size();
@@ -201,7 +216,7 @@ int schedule(std::vector< std::vector<AlgoBase*> > chainsVec) {
 	// loop over chains and runs the jobs
 	for (unsigned int ch = 0; ch < num_chains; ++ch) {
 		printf("instantiating Chain %u\n", ch);
-		chains.push_back( AlgoChain( chainNames[ch], g, chainsVec[ch]) );
+		chains.push_back( AlgoChain( wb, chainNames[ch], g, chainsVec[ch]) );
 		g.run( chains[ch] );
 	}
 
@@ -233,19 +248,20 @@ int main(int argc, char *argv[]) {
 	// default threads
 	int num_threads = 4;
 
+	// declaring a Whiteboard instance
+	Whiteboard wb("first_whiteboard");
 
 	// create a pool of algorithms
 	printf("creating the pool of algos\n");
-	Algo<DataTypeEvent, DataTypeA> algo1("algo1", "DataTypeEvent", "DataTypeA");
-	Algo<DataTypeA, DataTypeE> algo2("algo2", "DataTypeA", "DataTypeE");
-	Algo<DataTypeEvent, DataTypeB> algo3("algo3", "DataTypeEvent", "DataTypeB");
-	Algo<DataTypeB, DataTypeC> algo4("algo4", "DataTypeB", "DataTypeC");
-	Algo<DataTypeC, DataTypeE> algo5("algo5", "DataTypeC", "DataTypeE");
-	Algo<DataTypeEvent, DataTypeB> algo6("algo6", "DataTypeEvent", "DataTypeB");
-	Algo<DataTypeB, DataTypeE> algo7("algo7", "DataTypeB", "DataTypeE");
+	Algo<DataTypeEvent, DataTypeA> algo1(&wb, "algo1", "DataTypeEvent", "DataTypeA");
+	Algo<DataTypeA, DataTypeE> algo2(&wb, "algo2", "DataTypeA", "DataTypeE");
+	Algo<DataTypeEvent, DataTypeB> algo3(&wb, "algo3", "DataTypeEvent", "DataTypeB");
+	Algo<DataTypeB, DataTypeC> algo4(&wb, "algo4", "DataTypeB", "DataTypeC");
+	Algo<DataTypeC, DataTypeE> algo5(&wb, "algo5", "DataTypeC", "DataTypeE");
+	Algo<DataTypeEvent, DataTypeB> algo6(&wb, "algo6", "DataTypeEvent", "DataTypeB");
+	Algo<DataTypeB, DataTypeE> algo7(&wb, "algo7", "DataTypeB", "DataTypeE");
 
-	/// a vector of algorithms for one job/chain
-	//std::vector<AlgoBase*> algorithms;
+
 
 	printf("assigning algorithms to jobs/chains\n");
 	/// a vector of jobs/chains
@@ -267,11 +283,12 @@ int main(int argc, char *argv[]) {
 
 	// booking jobs/chains
 	chains.push_back(chain1);
-	chains.push_back(chain2);
-	chains.push_back(chain2);
-	chains.push_back(chain2);
+//	chains.push_back(chain2);
+//	chains.push_back(chain2);
+//	chains.push_back(chain2);
 
 	unsigned int num_chains = chains.size();
+
 
 
 	// command-line parser
@@ -291,13 +308,13 @@ int main(int argc, char *argv[]) {
 			timestamp_t time = 0;
 			int times = 0;
 			for (int nn=0; nn<5; ++nn) {
-				time += schedule(chains);
+				time += schedule(&wb, chains);
 				++times;
 			}
 			printf("%i threads - %u chains - Time: %f\n\n\n", num_threads, num_chains, time/(double)times );
 	}
 	else {
-		schedule(chains);
+		schedule(&wb, chains);
 	}
 
     return 0;
