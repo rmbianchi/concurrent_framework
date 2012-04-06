@@ -3,68 +3,67 @@
  *
  *  Created on: Mar 26, 2012
  *      Author: rbianchi@cern.ch  (Riccardo-Maria BIANCHI)
+ *              benedikt.hegner@cern.ch  (Benedikt HEGNER)
  */
 
 // include internals
 #include "Whiteboard.h"
 
 
-Whiteboard::Whiteboard(const char* name) : my_name(name), my_notifyEnabled(true)  {}
+Whiteboard::Whiteboard(const char* name, const int i) : my_name(name), number_of_slots(i) {
+  for (int i=0; i<=number_of_slots; ++i){
+    m_contexts.push_back(new Context(i,*this));
+    m_slots.push_back(new StringDataMap());
+  }
+
+}
 
 Whiteboard::~Whiteboard() {
-	// TODO Auto-generated destructor stub
+  //TODO: delete the slots
 }
 
-void Whiteboard::insert_into_table ( string &key, MyClass &m ) {
+void Whiteboard::write ( const DataItem &item, const std::string &key, const int slot_number) {
 
-	// create an accessor that will act as a smart pointer
-	// for write access
-	tbb::concurrent_hash_map<string, MyClass, my_hash_compare>::accessor a;
+       // use accessor as a cursor in the concurrent data structure
+       // releases lock at destruction of accessor 
+       StringDataMap::accessor a;
+       StringDataMap* slot = m_slots[slot_number];
+       slot->insert( a, key );
+       a->second = item;
 
+	//tbb::spin_mutex::scoped_lock lock;
+	////lock.acquire(my_mutex);
+	//printf("\nWhiteboard - published product: '%s'\n", key_name );
+	//lock.release();
 
-	// call insert to create a new element, or return an existing
-	// element if one exists.
-	// accessor a locks this element for exclusive use by this thread
-	string_table.insert( a, key );
-
-	const char* key_name = key.c_str();
-
-
-	// modify the value held by the pair
-	a->second = m;
-	// the accessor "a" releases the lock on the element when it is
-	// destroyed at the end of the scope
-
-	tbb::spin_mutex::scoped_lock lock;
-	lock.acquire(my_mutex);
-	printf("\nWhiteboard - published product: '%s'\n", key_name );
-	lock.release();
-
-	// notify the subscribers about the publication of the product
-	notify(key_name);
 }
 
-
-
-void Whiteboard::notify(const void* what, Subscriber* s)
-{
-	printf("Whiteboard::notify()\n");
-	if (my_notifyEnabled)
-	{
-		if (my_subscribers.size() == 0) {
-			printf("no subscribers to be notified.\n");
-		}
-		else {
-			std::list<Subscriber*>::iterator p;
-			for(p = my_subscribers.begin(); p != my_subscribers.end(); p++)
-				if (*p != s) {
-					printf("\t- updating AlgoChain: %s\n", (*p)->getName());
-					(*p)->update(this, what);
-				}
-		}
-	}
-
-	// we set 'notify' to True by default at the end of each notify operation
-	my_notifyEnabled = true;
+// TODO: this operation is *not* thread safe
+void Whiteboard::print_slot_content(const int slot_number) const {
+    printf("++++++++++++++++++++++++\nContent of slot %i:\n", slot_number);
+    StringDataMap::const_iterator i;
+    StringDataMap* slot = m_slots[slot_number];
+    for( i=slot->begin(); i!=slot->end(); ++i ){
+        printf("\t %s :\t %i\n",i->first.c_str(),i->second);
+    }
+    printf("++++++++++++++++++++++++\n");
 }
 
+bool Whiteboard::read(DataItem& item, const std::string& label, const int slot_number) const {
+  StringDataMap::const_accessor a; 
+  StringDataMap* slot = m_slots[slot_number]; 
+  bool successful = slot->find(a, label);
+  if (successful){
+    item =a->second; 
+    //printf("Whiteboard - reading of %s successful: %i \n", label.c_str(), item);
+  } else {
+    //printf("Whiteboard - reading of %s failed.\n", label.c_str());
+  }
+
+  return successful; 
+}
+
+//TODO: safe guard it against exceeded range!
+Context* Whiteboard::getContext(const int i){
+  return m_contexts[i];
+}
