@@ -6,14 +6,15 @@
  *              benedikt.hegner@cern.ch  (Benedikt HEGNER) 
  */
 
-// include internals
-#include "Algo.h"
-#include "EventGraph.h"
-#include "Whiteboard.h"
 // include c++
 #include <iostream>
 #include <cstdio>
 #include <map>
+// include fwk
+#include "Algo.h"
+#include "EventGraph.h"
+#include "ExampleChains.h"
+#include "Whiteboard.h"
 
 
 //===========================
@@ -78,16 +79,7 @@ int main(int argc, char *argv[]) {
 	Whiteboard wb("Central Whiteboard", 3);
 	// create a pool of toy algorithms
 	printf("Creating the pool of algos:\n");
-	ToyAlgo algo0("algo0",1, 1); algo0.produces("hits");
-	ToyAlgo algo1("algo1",2, 1); algo1.reads("hits"); algo1.produces("muons");
-	NonReentrantToyAlgo algo2("algo2",3, 3); algo2.reads("hits"); algo2.produces("electrons");
-	ToyAlgo algo3("algo3",4, 1); algo3.reads("muons"); algo3.reads("electrons"); algo3.produces("nobelprize");
-    // gathering the algorithm for a chain
-	std::vector<AlgoBase*> chain;
-	chain.push_back(&algo0);
-	chain.push_back(&algo1);
-	chain.push_back(&algo2);
-	chain.push_back(&algo3);
+	std::vector<AlgoBase*> chain = exampleChain1();
 
  	// command-line parser
 	if ( argc > 1 ) num_threads = atoi(argv[1]);
@@ -116,5 +108,9 @@ int main(int argc, char *argv[]) {
     wb.print_slot_content(0);
     wb.print_slot_content(1);
 
+    // do a final cleanup
+    for (unsigned int i = 0; i < chain.size(); ++i) {
+        delete chain[i];
+    }
 }
 

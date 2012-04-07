@@ -22,6 +22,7 @@
  */
 class AlgoBase {
 public:
+    virtual ~AlgoBase() = 0;
 	virtual void body(Context* context) = 0;
 	virtual const std::vector<std::string> get_inputs() const = 0;
 	virtual const std::vector<std::string> get_outputs() const = 0;
@@ -32,7 +33,7 @@ private:
   	virtual void publish(Context* context) = 0;
     virtual void read(Context* context) = 0;
 };
-
+AlgoBase::~AlgoBase(){}
 
 /**
  * Toy algorithm class
@@ -46,7 +47,7 @@ public:
 
 	// actual implementations of the virtual methods
 	void body(Context *context) {
-        int event;
+        unsigned int event;
         context->read(event, "meta");
         printf("Algo '%s' - begin - EVENT: %i\n", m_name, event);
         sleep(time);

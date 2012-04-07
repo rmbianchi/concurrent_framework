@@ -16,7 +16,7 @@
 // include c++
 #include <list>
 #include <vector>
-// include FWK specific headers
+// include fwk
 #include "ConcurrentTypes.h"
 #include "Context.h"
 
@@ -26,7 +26,6 @@ class Subscriber;
 /**
  * the Whiteboard class features a concurrent_hash_map to store published products
  * from modules.
- *
  */
 class Whiteboard {
 public:

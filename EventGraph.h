@@ -1,6 +1,7 @@
 //
 //  GraphSchedule.h
 //  
+//  Concurrent execution prototype based on tbb::flow::graph
 //
 //  Created by Benedikt Hegner on 4/5/12.
 //  Copyright (c) 2012 __CERN__. All rights reserved.
