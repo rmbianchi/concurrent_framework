@@ -30,8 +30,9 @@ int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain) {
 	timestamp_t tstart = get_timestamp();
     
 	// set up the scheduler
-    TaskScheduler scheduler(chain, wb, 3);
-    scheduler.run_parallel(1);
+    TaskScheduler scheduler(chain, wb, 2);
+    
+    scheduler.run_parallel(2);
 
 	tbb::spin_mutex::scoped_lock lock;
     

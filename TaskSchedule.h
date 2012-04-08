@@ -86,8 +86,11 @@ public:
     void get_bit_pattern(){};
     const std::vector<TaskGraphNode*>& get_all_nodes();
     const bool finished() const {return m_stop_algo->was_run();};
+    const bool is_available() const {return m_available;};
+    void reset(){m_available = true;};
     
 private:
+    bool m_available;
     std::vector<AlgoBase*> m_algorithms;
     std::vector<TaskGraphNode*> m_nodes;
     void prepare_graph();

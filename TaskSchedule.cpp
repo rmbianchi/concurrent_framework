@@ -71,7 +71,7 @@ void TaskGraphNode::execute(Context* context, AlgoBase* algo_instance){
 //===========================
 //		AlgoGraph
 //===========================
-AlgoGraph::AlgoGraph(std::vector<AlgoBase*> algorithms): m_algorithms(algorithms){
+AlgoGraph::AlgoGraph(std::vector<AlgoBase*> algorithms): m_available(true), m_algorithms(algorithms){
     prepare_graph();
 }
 
@@ -91,6 +91,7 @@ void AlgoGraph::run_sequentially(Context* context){
 }
 
 void AlgoGraph::run_parallel(Context* context){
+    m_available = false;
     m_stop_algo->reset();
     m_start_node->run_parallel(context);
 }
@@ -146,10 +147,10 @@ void AlgoGraph::prepare_graph(){
 //		TaskScheduler
 //===========================
 TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(algos), m_wb(wb) {    
-    for (unsigned int graph_index; graph_index < max_concurrent_events; ++graph_index) {
+    for (unsigned int graph_index = 0; graph_index < max_concurrent_events; ++graph_index) {
         m_graphs.push_back(new AlgoGraph(algos));
         // announce itself to all GraphNodes
-        const std::vector<TaskGraphNode*>& nodes = m_graphs[0]->get_all_nodes();
+        const std::vector<TaskGraphNode*>& nodes = m_graphs[graph_index]->get_all_nodes();
         for (unsigned int i = 0, max = nodes.size(); i<max; ++i) {
             nodes[i]->set_scheduler(this);
         }
@@ -174,24 +175,39 @@ void TaskScheduler::print_queue(){
 }
 
 //TODO: enable it to run multiple graphs in parallel
+//TODO: make sure there are enough contexts available
 void TaskScheduler::run_parallel(int n){
-    for (unsigned int i = 0; i < n; ++i) {
-        // start m_max_concurrent_events slots at the same time
-        // everyting
-	    Context* context = m_wb->getContext(i); 
-        context->write(i, "event","event");
-		m_graphs[0]->run_parallel(context);
-        // and now see what we get in hands
-        TaskItem* result;
+    unsigned int in_flight(0), processed(0);
+    do {
+        // if possible start processing a new event
+        if (in_flight < m_max_concurrent_events && processed+in_flight < n) {
+            AlgoGraph* available_graph(0);
+            for (unsigned int i=0, max = m_graphs.size() ; i<max; ++i) {
+                if (m_graphs[i]->is_available()) {available_graph = m_graphs[i];}
+            }
+            Context* context = m_wb->getContext(in_flight); //TODO: get proper context !!
+            context->write(processed+in_flight, "event","event");
+            available_graph->run_parallel(context); 
+            available_graph = 0;
+            ++in_flight;
+        }        
+        // put into the tbb queue whatever is available
         bool queue_full = false;
+        TaskItem* result;
         do {
             queue_full = m_waiting_queue.try_pop(result);
             if (queue_full) {
-                tbb::task* t = new( tbb::task::allocate_root() ) ConcreteTask(result, result->first->get_algo());
+                tbb::task* t = new( tbb::task::allocate_root() ) ConcreteTask(result, result->first->get_algo()); //TODO: limit to available algorithm instances
                 tbb::task::enqueue( *t);
             }
-        } while (!m_graphs[0]->finished());
-	}
+        } while (queue_full);
+        
+        // check for finished events
+        for (unsigned int i=0, max = m_graphs.size() ; i<max; ++i) {
+            if (m_graphs[i]->finished()) {++processed; --in_flight; m_graphs[i]->reset(); }
+        }        
+    } while (processed < n);
+    
 }
 
 void TaskScheduler::run_sequentially(int n){
