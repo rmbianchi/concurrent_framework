@@ -60,7 +60,7 @@ public:
     m_graph(&the_graph) {make_my_node();};
 	virtual ~EventGraph() {};
 	void operator()();
-	const char* getName() const {return m_name;};
+	const char* get_name() const {return m_name;};
     tbb::flow::broadcast_node< Context* >* get_start_node(){return m_startNode;};
     
 private:
@@ -102,10 +102,10 @@ void EventGraph::make_my_node() {
         if (inputs.size() == 0 ) {
 			make_edge( *m_startNode, *m_created_nodes[algoN] );
 			lock.acquire(my_mutex);
-			printf("-1: Connecting source with %s (%u)\n", m_algorithms[algoN]->getName(), algoN);
+			printf("-1: Connecting source with %s (%u)\n", m_algorithms[algoN]->get_name(), algoN);
 			lock.release();
 		}
-		printf(" %i: %s\n",algoN, m_algorithms[algoN]->getName());
+		printf(" %i: %s\n",algoN, m_algorithms[algoN]->get_name());
         
 		// outputs of the node
 		std::vector<std::string> outputs = m_algorithms[algoN]->get_outputs();
@@ -127,7 +127,7 @@ void EventGraph::make_my_node() {
 					//connect nodes with edges
 					make_edge(*m_created_nodes[algoN], *m_created_nodes[node] );
 					lock.acquire(my_mutex);
-					printf("\tconnecting to %s (via '%s') (%u-%u)\n", m_algorithms[node]->getName(), inputs[in_counter].c_str(), algoN, node);
+					printf("\tconnecting to %s (via '%s') (%u-%u)\n", m_algorithms[node]->get_name(), inputs[in_counter].c_str(), algoN, node);
 					lock.release();
 				}
               } // end looping over all inputs
@@ -141,6 +141,7 @@ void EventGraph::make_my_node() {
     //TODO: 
     //  make it more elegant and remove the 'new's
     //  create a special sink class that calls back to the Whiteboard and declares the event as finished
+    // could add a limit_node to make really sure each graph sees only one event at a time
     ToyAlgo* sink = new ToyAlgo("the sink",0, 0);sink->produces("output");
     used_node* sink_node = new used_node( *m_graph, tbb::flow::serial, node_body( sink ));
     

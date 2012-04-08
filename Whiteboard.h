@@ -10,7 +10,7 @@
 #define WHITEBOARD_H_
 
 
-// include TBB
+// include tbb
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_hash_map.h"
 // include c++

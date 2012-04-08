@@ -22,18 +22,14 @@
  */
 class AlgoBase {
 public:
-    virtual ~AlgoBase() = 0;
+    virtual ~AlgoBase(){};
 	virtual void body(Context* context) = 0;
 	virtual const std::vector<std::string> get_inputs() const = 0;
 	virtual const std::vector<std::string> get_outputs() const = 0;
-	virtual const char* getName() const = 0;
+	virtual const char* get_name() const = 0;
     virtual void produces(const std::string&) = 0;
     virtual void reads(const std::string&) = 0;
-private:
-  	virtual void publish(Context* context) = 0;
-    virtual void read(Context* context) = 0;
 };
-AlgoBase::~AlgoBase(){}
 
 /**
  * Toy algorithm class
@@ -47,8 +43,8 @@ public:
 
 	// actual implementations of the virtual methods
 	void body(Context *context) {
-        unsigned int event;
-        context->read(event, "meta");
+        unsigned int event(0);
+        context->read(event, "event");
         printf("Algo '%s' - begin - EVENT: %i\n", m_name, event);
         sleep(time);
   	    read(context);
@@ -57,7 +53,7 @@ public:
 	};
 	const std::vector<std::string> get_inputs() const {return inputs;};
 	const std::vector<std::string> get_outputs() const {return outputs;};
-	const char* getName() const {return m_name;};
+	const char* get_name() const {return m_name;};
 
     void produces(const std::string& out) {outputs.push_back(out);};
     void reads(const std::string& in) {inputs.push_back(in);};
@@ -95,6 +91,30 @@ private:
     int m_counter;
     tbb::queuing_mutex my_mutex;
     
+};
+
+class EndAlgo : public AlgoBase{
+public:
+    EndAlgo(const char* name) : m_name(name), m_was_run(false) {};  
+    void body(Context* context) {
+        tbb::queuing_mutex::scoped_lock lock;
+        lock.acquire(my_mutex);
+        m_was_run = true;
+        lock.release();
+    };
+    const bool was_run() const {return m_was_run;};
+    void reset() {m_was_run = false;};
+	const std::vector<std::string> get_inputs() const {return std::vector<std::string>();};
+	const std::vector<std::string> get_outputs() const {return std::vector<std::string>();};
+	const char* get_name() const {return m_name;};
+    void produces(const std::string&){};
+    void reads(const std::string&){};
+
+    
+private:
+    const char* m_name;
+    bool m_was_run;
+    tbb::queuing_mutex my_mutex;
 };
 
 #endif /* ALGO_H_ */

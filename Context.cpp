@@ -13,7 +13,7 @@ Context::Context(const int i, Whiteboard& wb) : _number(i), wb(wb) {}
 Context::~Context() {}
 
 void Context::write ( const DataItem& item, const std::string &algo_name, const std::string &label ) {
-    wb.write(item,algo_name,_number);
+    wb.write(item,label,_number);
     //wb->write(item,algo_name+":"+label,_number);
 }
 

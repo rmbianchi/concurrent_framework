@@ -57,7 +57,7 @@ bool Whiteboard::read(DataItem& item, const std::string& label, const int slot_n
     item =a->second; 
     //printf("Whiteboard - reading of %s successful: %i \n", label.c_str(), item);
   } else {
-    //printf("Whiteboard - reading of %s failed.\n", label.c_str());
+    printf("Whiteboard - reading of %s failed.\n", label.c_str());
   }
 
   return successful; 

@@ -12,18 +12,6 @@
 #include "ConcurrentTypes.h"
 #include "EventGraph.h"
 
-class AlgoGraph;
 
-class Scheduler {
-public:
-    
-    void add_to_queue()
-    
-private:
-    
-    StringUIntMap available_algo_instances;
-    StringUIntMap 
-
-};
 
 #endif
