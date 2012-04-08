@@ -2,78 +2,98 @@
  * Algo.h
  *
  *  Created on: Mar 8, 2012
- *      Author: rbianchi@cern.ch  (Riccardo-Maria BIANCHI)
+ *      Authors: rbianchi@cern.ch  (Riccardo-Maria BIANCHI)
+ *               benedikt.hegner@cern.ch  (Benedikt HEGNER)
  */
 
 #ifndef ALGO_H_
 #define ALGO_H_
 
-// include internals
-#include "Whiteboard.h"
-
 // include c++
 # include <iostream>
 # include <cstdio>
+// include internals
+#include "Whiteboard.h"
 
+#include "tbb/queuing_mutex.h"
 
 /**
  * Algorithm virtual base class
  */
 class AlgoBase {
 public:
-	virtual void body() = 0;
-	virtual std::string getDataTypeIN() = 0;
-	virtual std::string getDataTypeOUT() = 0;
-	virtual const char* getName() = 0;
-	virtual void publishToWhiteboard() = 0;
+	virtual void body(Context* context) = 0;
+	virtual const std::vector<std::string> get_inputs() const = 0;
+	virtual const std::vector<std::string> get_outputs() const = 0;
+	virtual const char* getName() const = 0;
+    virtual void produces(const std::string&) = 0;
+    virtual void reads(const std::string&) = 0;
+private:
+  	virtual void publish(Context* context) = 0;
+    virtual void read(Context* context) = 0;
 };
 
 
 /**
- * Algorithm template class
+ * Toy algorithm class
  */
-template <class T1, class T2>
-class Algo : public AlgoBase {
+class ToyAlgo : public AlgoBase {
 public:
 
-	/*
-	 * variables
-	 */
-	const char* m_name;
-	T1 dataIN;
-	T2 dataOUT;
-	std::string dataTypeIN;
-	std::string dataTypeOUT;
-
-	Whiteboard* m_wb;
-	MyClass mc;
-
-	/*
-	 * methods
-	 */
-	Algo(Whiteboard* wb, const char* name) : m_name(name), m_wb(wb) {printf("Instantiating %s\n", m_name);};
-	Algo(Whiteboard* wb, const char* name, std::string typeIN, std::string typeOUT) : m_name(name), dataTypeIN(typeIN), dataTypeOUT(typeOUT), m_wb(wb) {printf("Instantiating %s\n", m_name);};
-	Algo(Whiteboard* wb, const char* name, T1 in, T2 out) : m_name(name), dataIN(in), dataOUT(out), m_wb(wb) {};
-	virtual ~Algo() {};
+	ToyAlgo(const char* name, int value, unsigned int time) : m_name(name), inputs(), outputs(), time(time), data(value) 
+    {printf("Instantiating %s\n", m_name);};
+    virtual ~ToyAlgo() {};
 
 	// actual implementations of the virtual methods
-	void body() {printf("Algo '%s' - body() - IN: %s - OUT: %s\n", m_name, dataTypeIN.c_str(), dataTypeOUT.c_str()); sleep(2);
-				 publishToWhiteboard();
-				 printf("\n");
-				};
-	std::string getDataTypeIN() {return dataTypeIN;};
-	std::string getDataTypeOUT() {return dataTypeOUT;};
-	const char* getName() {return m_name;};
-	void publishToWhiteboard() {printf("Algo '%s' - publishToWhiteboard()\n", m_name);
-								m_wb->insert_into_table(dataTypeOUT, mc);
-	                            };
+	void body(Context *context) {
+        int event;
+        context->read(event, "meta");
+        printf("Algo '%s' - begin - EVENT: %i\n", m_name, event);
+        sleep(time);
+  	    read(context);
+		publish(context);
+        printf("Algo '%s' - end - EVENT: %i\n", m_name, event);
+	};
+	const std::vector<std::string> get_inputs() const {return inputs;};
+	const std::vector<std::string> get_outputs() const {return outputs;};
+	const char* getName() const {return m_name;};
 
+    void produces(const std::string& out) {outputs.push_back(out);};
+    void reads(const std::string& in) {inputs.push_back(in);};
+private:
+   	void publish(Context* context) {
+        for (t_tags::const_iterator i=outputs.begin(); i!=outputs.end(); ++i) context->write(data, m_name, *i);
+    };
+    void read(Context* context) {
+        for (t_tags::const_iterator i=inputs.begin(); i!=inputs.end(); ++i) context->read(data, *i);
+    }; 
+protected:    
+    typedef std::vector<std::string> t_tags;
+	const char* m_name;
+    t_tags inputs;
+	t_tags outputs;
+    const unsigned int time;
+	DataItem data;
 };
 
-
-
-
-
-
+/**
+ * non re-entrant toy algorithm class; for now doing non-performant locking
+ * could try to model it in tbb::flow:graph with a rejecting node
+ * the serial specifier did not what I naively expected
+ */
+class NonReentrantToyAlgo : public ToyAlgo{
+public:
+    NonReentrantToyAlgo(const char* name, int value, unsigned int time) : ToyAlgo(name, value, time), m_counter(0){};  
+    void body(Context* context) {
+        tbb::queuing_mutex::scoped_lock lock;
+        lock.acquire(my_mutex);
+        ++m_counter;ToyAlgo::body(context); printf("Algo '%s' unsafe counter: %i\n", m_name, m_counter);
+        lock.release();
+    };
+private:
+    int m_counter;
+    tbb::queuing_mutex my_mutex;
+    
+};
 
 #endif /* ALGO_H_ */

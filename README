@@ -2,15 +2,10 @@
 To Compile:
 ===========
 
-on Mac/Linux:
--------------
+cmake -G Xcode -DTBB_INSTALL_DIR=/opt/intel/tbb/tbb40_297oss
+...fire up XCode
 
-Building file: ../dependency_graph.cpp
-Invoking: GCC C++ Compiler
-g++ -I/opt/intel/tbb/tbb40_20120201oss/include -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"dependency_graph.d" -MT"dependency_graph.d" -o"dependency_graph.o" "../dependency_graph.cpp"
+OR
 
-Building target: concurrent_framework_demonstrator
-Invoking: MacOS X C++ Linker
-g++ -L/opt/intel/tbb/tbb40_20120201oss/lib -o "concurrent_framework_demonstrator"  ./dependency_graph.o   -ltbb
-Finished building target: concurrent_framework_demonstrator
-
+cmake -DTBB_INSTALL_DIR=/opt/intel/tbb/tbb40_297oss
+make
