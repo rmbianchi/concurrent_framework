@@ -43,6 +43,30 @@ public:
 };
 
 
+// the BitsTaskItem is the item used for call back once tbb finished the BitsTask
+class BitsTaskId {
+public:
+    BitsTaskId(AlgoBase* algo, unsigned int algo_id, unsigned int event_id, Context* context): algo(algo),algo_id(algo_id), event_id(event_id), context(context) {};
+    AlgoBase* algo;
+    unsigned int algo_id;
+    unsigned int event_id;
+    Context* context;
+};
+
+/**
+ * The tbb::task implementation that gets passed to tbb::task::enqueue
+ * as opposed to BitsTaskItem it can be disposed by tbb (as per design)
+ * it specifically gets the done_queue for talk back
+ */
+class BitsTask : public tbb::task {
+public:
+    BitsTask(BitsTaskId* task, tbb::concurrent_queue<BitsTaskId*>* done_queue): m_task(task), m_done_queue(done_queue) {};    
+    tbb::task* execute();
+    BitsTaskId* m_task;
+    tbb::concurrent_queue<BitsTaskId*>* m_done_queue;
+};
+
+
 /**
  * Node for a TaskGraph; the task graph does the book keeping of what can be run. 
  */
@@ -85,7 +109,7 @@ public:
     virtual ~AlgoGraph();
     void run_sequentially(Context*);
     void run_parallel(Context*);
-    const std::vector<TaskGraphNode*>& get_all_nodes();    
+    const std::vector<TaskGraphNode*>& get_all_nodes() const;
     // parts relevant for task based scheduling
     const bool finished() const {if (m_current_context==NULL) return false ; return m_current_context->is_finished();};
     const bool is_available() const {return m_available;};
@@ -126,7 +150,7 @@ public:
     void run_parallel2(int n);    // run n events with alternative scheduler
     void run_sequentially(int n); // run n events sequentially
     // parts relevant for bit pattern creation
-    void prepare_bit_pattern(){m_graphs[0]->pass_bit_pattern();};
+    void prepare_bit_pattern();
     void print_bit_pattern() const;
     
 private:
@@ -138,8 +162,7 @@ private:
     tbb::concurrent_queue<TaskItem*> m_waiting_queue;
     tbb::concurrent_queue<TaskItem*> m_checked_queue;
     tbb::concurrent_queue<TaskItem*> m_done_queue;
-    std::vector<unsigned int> running_bitpattern; //for bit pattern scheduler
-              
+    tbb::concurrent_queue<BitsTaskId*> m_bits_done_queue;
 };
 
 #endif

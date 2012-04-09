@@ -15,6 +15,11 @@ tbb::task* ConcreteTask::execute(){
     return NULL;
 }
 
+tbb::task* BitsTask::execute(){
+    m_task->algo->body(m_task->context);
+    m_done_queue->push(m_task);
+    return NULL;
+}
 
 //===========================
 //		TaskGraphNode
@@ -103,11 +108,9 @@ AlgoGraph::~AlgoGraph(){
 }
 
 
-const std::vector<TaskGraphNode*>& AlgoGraph::get_all_nodes() {
+const std::vector<TaskGraphNode*>& AlgoGraph::get_all_nodes() const {
     return m_nodes;
-
 }
-
 
 void AlgoGraph::run_sequentially(Context* context){
     m_current_context = context;
@@ -159,7 +162,7 @@ void AlgoGraph::prepare_graph(){
         }
     } // end of connecting the nodes
     m_stop_algo = new EndAlgo("*END*");
-    m_stop_node = new TaskGraphNode(m_stop_algo,m_nodes.size()+1);
+    m_stop_node = new TaskGraphNode(m_stop_algo,m_nodes.size());
     for(unsigned int i = 1; i < m_nodes.size(); ++i){
         if(m_nodes[i]->n_of_sucessors() == 0){
             m_stop_node->register_predecessor(m_nodes[i]);
@@ -172,7 +175,7 @@ void AlgoGraph::prepare_graph(){
 //===========================
 //		TaskScheduler
 //===========================
-TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(algos), m_wb(wb),running_bitpattern(0) {    
+TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(0), m_wb(wb) {    
     assert(max_concurrent_events>0); // we want to have at least one graph
     for (unsigned int graph_index = 0; graph_index < max_concurrent_events; ++graph_index) {
         m_graphs.push_back(new AlgoGraph(algos));
@@ -187,18 +190,17 @@ TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsig
     //TODO: make this configurable; requires proper copy constructor of algos
     const unsigned int size = m_graphs[0]->get_all_nodes().size();
     available_algo_instances.resize(size);
+    m_algos.resize(size);
     const std::vector<TaskGraphNode*>& nodes = m_graphs[0]->get_all_nodes();
     for (unsigned int i = 0, max = nodes.size(); i<max; ++i) {
-        printf("%i : %s\n", nodes[i]->get_identifier(),nodes[i]->get_algo()->get_name());
         available_algo_instances[nodes[i]->get_identifier()] = new tbb::concurrent_queue<AlgoBase*>();   
         available_algo_instances[nodes[i]->get_identifier()]->push(nodes[i]->get_algo());
-        printf("queue is empty: %i\n", available_algo_instances[nodes[i]->get_identifier()]->empty());
-    }
+        m_algos[nodes[i]->get_identifier()] = nodes[i]->get_algo();
+    }  
 }
 
 
 void TaskScheduler::add_to_waiting_queue(TaskItem* task_item) {
-    //printf("%s in add_to_waiting queue has context nr %i\n", task_item->first->get_algo()->get_name(), task_item->second->_number);
     m_waiting_queue.push(task_item);
 }
 
@@ -242,7 +244,6 @@ void TaskScheduler::run_parallel(int n){
         }        
         
         TaskItem* result(0);  
-        AlgoBase* algo_instance(0);
         bool queue_full(false);
         bool algo_free(false);
 
@@ -257,7 +258,7 @@ void TaskScheduler::run_parallel(int n){
         // put into the tbb queue whatever is possible
         queue_full = false;
         do {
-            algo_instance = NULL;
+            AlgoBase* algo_instance(0);//algo_instance = NULL;
             queue_full = m_waiting_queue.try_pop(result);
             if (queue_full) {
                 algo_free = available_algo_instances[result->first->get_identifier()]->try_pop(algo_instance);
@@ -287,7 +288,7 @@ void TaskScheduler::run_parallel(int n){
 }
 
 
-// Scheduler using a bit mask for analysis of what can be run; for now a placeholder for missing implementation
+// Scheduler using a bit mask for analysis of what can be run;
 void TaskScheduler::run_parallel2(int n){
     prepare_bit_pattern();
     printf("++++++++++++++++++++++++++++\n");
@@ -295,8 +296,97 @@ void TaskScheduler::run_parallel2(int n){
     printf("   computed dependencies:\n");
     print_bit_pattern();
     printf("++++++++++++++++++++++++++++\n");
+    std::vector<std::pair<unsigned int, Context*> > bit_events(m_max_concurrent_events);
+    //get the bit patterns and sort by node id (like the available algos)
+    const std::vector<TaskGraphNode*>& nodes = m_graphs[0]->get_all_nodes();
+    
+    // some book keeping vectors
+    const unsigned int size = nodes.size();  
+    std::vector<std::vector<bool> > algo_has_run_in_eventid(m_max_concurrent_events, std::vector<bool>(size, false)); //TODO: replace   
+    std::vector<unsigned int> bits(size);  
+    
+    for (unsigned int i = 1; i < size; ++i) {
+        bits[nodes[i]->get_identifier()] = nodes[i]->get_bit_pattern();
+    }
         
-  
+    unsigned int in_flight(0), processed(0);
+    unsigned int current_event(0);  
+    do {        
+        // check if a new event can and should be started
+        int available_eventid = -1;
+        if (in_flight < m_max_concurrent_events && processed+in_flight < n) {
+            for (unsigned int i=0, max = bit_events.size() ; i<max; ++i) {
+                if (bit_events[i].second==NULL){ 
+                    //since the pointer to the Context is NULL, this slot is free
+                    available_eventid = i;
+                }
+            } 
+        }
+        // if possible start processing of a new event
+        if (available_eventid !=-1) {
+            int& i = available_eventid;
+            bit_events[i].first = 0;
+            bit_events[i].second = m_wb->getContext(current_event);
+            bit_events[i].second->write(processed+in_flight, "event","event");
+            ++current_event;
+            ++in_flight;               
+        }
+ 
+        // loop through the entire vector of algo bits
+        for (unsigned int algo = 0; algo < size; ++algo) {
+            // loop through all currently active events
+            for (unsigned int event_id = 0; event_id < m_max_concurrent_events ; ++event_id) {
+                if (bit_events[event_id].second != NULL) {
+                    // extract event_id specific quantities
+                    unsigned int& current_event_bits = bit_events[event_id].first;
+                    Context*& context = bit_events[event_id].second;
+                    std::vector<bool>& algo_has_run = algo_has_run_in_eventid[event_id];
+                    // check bit pattern
+                    unsigned int tmp = (current_event_bits & bits[algo]) ^ bits[algo];
+                    AlgoBase* algo_instance(0);
+                    bool algo_free(0);
+                    if ((tmp==0) && (algo_has_run[algo] == false)) {
+                        algo_free = available_algo_instances[algo]->try_pop(algo_instance);
+                        if (algo_free) { 
+                            BitsTaskId* task = new BitsTaskId(m_algos[algo],algo,event_id,context);    
+                            tbb::task* t = new( tbb::task::allocate_root() ) BitsTask(task, &m_bits_done_queue);
+                            tbb::task::enqueue( *t); 
+                            algo_has_run[algo] = true;
+                        }
+                    }
+                }
+            }
+        }  
+        
+        // check for finished tasks
+        // free the used algo instances
+        // update the set bits for the particular event
+        // then delete the TaskItemId        
+        BitsTaskId* result(0);
+        bool queue_full(false);
+        do {
+            queue_full = m_bits_done_queue.try_pop(result);
+            if (queue_full) {
+                available_algo_instances[result->algo_id]->push(result->algo);
+                unsigned int old_bits(bit_events[result->event_id].first); 
+                unsigned int new_bits = old_bits | (1 << result->algo_id);
+                bit_events[result->event_id].first = new_bits;
+                delete result;
+            }
+        } while (queue_full);  
+        
+        // TODO: check for finished events
+        for (unsigned int i=0, max = bit_events.size() ; i<max; ++i) {
+            if (bit_events[i].second != NULL) {
+                if (bit_events[i].second->is_finished()) {
+                    ++processed; 
+                    --in_flight; 
+                    bit_events[i].second = NULL; 
+                    printf("Finished event\n"); } // TODO: add proper context disconnect; free used algo vector
+            }
+        }     
+    } while (processed < n);
+    
 }
 
 
@@ -311,10 +401,13 @@ void TaskScheduler::run_sequentially(int n){
 	}
 }
 
+void TaskScheduler::prepare_bit_pattern() {
+    m_graphs[0]->pass_bit_pattern(); 
+}
 
 void TaskScheduler::print_bit_pattern() const {
     const std::vector<TaskGraphNode*>& nodes = m_graphs[0]->get_all_nodes();
     for (unsigned int i = 0, max = nodes.size(); i<max; ++i) {
-        printf("Algo %i: %i\n", i, nodes[i]->get_bit_pattern() );
+        printf("%s: %i\n", nodes[i]->get_algo()->get_name(), nodes[i]->get_bit_pattern() );
     }     
 }
