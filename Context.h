@@ -22,15 +22,16 @@ class Whiteboard;
 
 class Context {
 public:
-  Context(const int number, Whiteboard& wb);
-  virtual ~Context();
-
-  bool read(DataItem&, const std::string& label) const;
-  void write(const DataItem& item, const::std::string& algo_name, const::std::string& label); 
-  void print_content() const; 
-
-private:
+    Context(const int number, Whiteboard& wb);
+    virtual ~Context();
+    bool read(DataItem&, const std::string& label) const;
+    void write(const DataItem& item, const::std::string& algo_name, const::std::string& label); 
+    void print_content() const;
+    void set_finished(){m_finished=true;};
+    const bool is_finished() const {return m_finished;};
     const int _number;
+private:
+    bool m_finished;
     Whiteboard& wb; 
 };
 

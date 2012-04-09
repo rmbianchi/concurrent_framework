@@ -24,17 +24,18 @@ Whiteboard::~Whiteboard() {
 
 void Whiteboard::write ( const DataItem &item, const std::string &key, const int slot_number) {
 
-       // use accessor as a cursor in the concurrent data structure
-       // releases lock at destruction of accessor 
-       StringDataMap::accessor a;
-       StringDataMap* slot = m_slots[slot_number];
-       slot->insert( a, key );
-       a->second = item;
+    // use accessor as a cursor in the concurrent data structure
+    // releases lock at destruction of accessor 
+    StringDataMap::accessor a;
+    StringDataMap* slot = m_slots[slot_number];
+    if (slot->count(key)>0) { printf("WARNING: %s already in whiteboard\n",key.c_str()) ;}
+    slot->insert( a, key );
+    a->second = item;
 
-	//tbb::spin_mutex::scoped_lock lock;
-	////lock.acquire(my_mutex);
-	//printf("\nWhiteboard - published product: '%s'\n", key_name );
-	//lock.release();
+    //tbb::spin_mutex::scoped_lock lock;
+    ////lock.acquire(my_mutex);
+    //printf("\nWhiteboard - published product: '%s'\n", key_name );
+    //lock.release();
 
 }
 
@@ -65,5 +66,5 @@ bool Whiteboard::read(DataItem& item, const std::string& label, const int slot_n
 
 //TODO: safe guard it against exceeded range!
 Context* Whiteboard::getContext(const int i){
-  return m_contexts[i];
+    return m_contexts[i];
 }

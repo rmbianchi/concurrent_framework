@@ -7,6 +7,7 @@
 //
 
 #include "TaskSchedule.h"
+#include <assert.h>
 
 tbb::task* ConcreteTask::execute(){
     m_task->first->execute(m_task->second, m_algo_instance);
@@ -19,21 +20,24 @@ tbb::task* ConcreteTask::execute(){
 //		TaskGraphNode
 //===========================
 TaskGraphNode::TaskGraphNode(AlgoBase* algo, const unsigned int index):
-m_notification_counter(0), m_algo(algo), m_identifier(index), n_predecessors(0){};
+m_notification_counter(0), m_algo(algo), m_identifier(index), n_predecessors(0), m_bitpattern(0){};
 
 void TaskGraphNode::register_predecessor(TaskGraphNode* node){
     ++n_predecessors;
     node->register_sucessor(this);
 }
 
+
 void TaskGraphNode::register_sucessor(TaskGraphNode* node){
     m_sucessors.push_back(node);
 }
 
+
 void TaskGraphNode::set_scheduler(TaskScheduler* scheduler){
     m_scheduler = scheduler; 
 }
-     
+  
+
 void TaskGraphNode::run_sequentially(Context* context){
     if (n_predecessors>0){++m_notification_counter;}; // cover the special case of start node
     if (m_notification_counter==n_predecessors){
@@ -45,6 +49,7 @@ void TaskGraphNode::run_sequentially(Context* context){
     }
 }
 
+
 // For parallel execution. It puts a TaskItem into the queue
 // TODO: check the counter for thread safety 
 void TaskGraphNode::run_parallel(Context* context){
@@ -55,11 +60,13 @@ void TaskGraphNode::run_parallel(Context* context){
     }
 }
 
+
 void TaskGraphNode::notify_sucessors(Context* context){
     for (unsigned int i=0; i < m_sucessors.size(); ++i){
         m_sucessors[i]->run_parallel(context);
     }   
 }
+
 
 void TaskGraphNode::execute(Context* context, AlgoBase* algo_instance){
     algo_instance->body(context);
@@ -68,12 +75,26 @@ void TaskGraphNode::execute(Context* context, AlgoBase* algo_instance){
 }
 
 
+void TaskGraphNode::pass_bit_pattern(unsigned int bitpattern){    
+    m_bitpattern = m_bitpattern | bitpattern;
+    if (n_predecessors>0){++m_notification_counter;}; // cover the special case of start node
+    if (m_notification_counter==n_predecessors){
+        unsigned int new_bitpattern = m_bitpattern | (1 << m_identifier);
+        for (unsigned int i=0; i < m_sucessors.size(); ++i){
+            m_sucessors[i]->pass_bit_pattern(new_bitpattern);
+        }   
+        m_notification_counter = 0;  
+    }
+}
+
+
 //===========================
 //		AlgoGraph
 //===========================
-AlgoGraph::AlgoGraph(std::vector<AlgoBase*> algorithms): m_available(true), m_algorithms(algorithms){
+AlgoGraph::AlgoGraph(std::vector<AlgoBase*> algorithms): m_algorithms(algorithms), m_available(true), m_current_context(0){
     prepare_graph();
 }
+
 
 AlgoGraph::~AlgoGraph(){
     for (unsigned int i=0, max=m_nodes.size(); i<max; ++i) {
@@ -81,20 +102,25 @@ AlgoGraph::~AlgoGraph(){
     }   
 }
 
+
 const std::vector<TaskGraphNode*>& AlgoGraph::get_all_nodes() {
     return m_nodes;
 
 }
 
+
 void AlgoGraph::run_sequentially(Context* context){
+    m_current_context = context;
     m_start_node->run_sequentially(context);
 }
 
+
 void AlgoGraph::run_parallel(Context* context){
+    m_current_context = context;
     m_available = false;
-    m_stop_algo->reset();
     m_start_node->run_parallel(context);
 }
+
 
 void AlgoGraph::prepare_graph(){
     
@@ -133,7 +159,7 @@ void AlgoGraph::prepare_graph(){
         }
     } // end of connecting the nodes
     m_stop_algo = new EndAlgo("*END*");
-    m_stop_node = new TaskGraphNode(m_stop_algo,0);
+    m_stop_node = new TaskGraphNode(m_stop_algo,m_nodes.size()+1);
     for(unsigned int i = 1; i < m_nodes.size(); ++i){
         if(m_nodes[i]->n_of_sucessors() == 0){
             m_stop_node->register_predecessor(m_nodes[i]);
@@ -146,26 +172,43 @@ void AlgoGraph::prepare_graph(){
 //===========================
 //		TaskScheduler
 //===========================
-TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(algos), m_wb(wb) {    
+TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(algos), m_wb(wb),running_bitpattern(0) {    
+    assert(max_concurrent_events>0); // we want to have at least one graph
     for (unsigned int graph_index = 0; graph_index < max_concurrent_events; ++graph_index) {
         m_graphs.push_back(new AlgoGraph(algos));
         // announce itself to all GraphNodes
         const std::vector<TaskGraphNode*>& nodes = m_graphs[graph_index]->get_all_nodes();
         for (unsigned int i = 0, max = nodes.size(); i<max; ++i) {
-            nodes[i]->set_scheduler(this);
+            nodes[i]->set_scheduler(this);      
         }
+    }
+    
+    //For now assume we have per algo one available instance
+    //TODO: make this configurable; requires proper copy constructor of algos
+    const unsigned int size = m_graphs[0]->get_all_nodes().size();
+    available_algo_instances.resize(size);
+    const std::vector<TaskGraphNode*>& nodes = m_graphs[0]->get_all_nodes();
+    for (unsigned int i = 0, max = nodes.size(); i<max; ++i) {
+        printf("%i : %s\n", nodes[i]->get_identifier(),nodes[i]->get_algo()->get_name());
+        available_algo_instances[nodes[i]->get_identifier()] = new tbb::concurrent_queue<AlgoBase*>();   
+        available_algo_instances[nodes[i]->get_identifier()]->push(nodes[i]->get_algo());
+        printf("queue is empty: %i\n", available_algo_instances[nodes[i]->get_identifier()]->empty());
     }
 }
 
+
 void TaskScheduler::add_to_waiting_queue(TaskItem* task_item) {
+    //printf("%s in add_to_waiting queue has context nr %i\n", task_item->first->get_algo()->get_name(), task_item->second->_number);
     m_waiting_queue.push(task_item);
 }
+
 
 void TaskScheduler::add_to_done_queue(TaskItem* task_item) {
     m_done_queue.push(task_item);
 }
 
-void TaskScheduler::print_queue(){
+
+void TaskScheduler::print_waiting_queue(){
     TaskItem* result;
     bool sucessful(false);
     do {
@@ -174,46 +217,104 @@ void TaskScheduler::print_queue(){
     } while (sucessful==true);    
 }
 
-//TODO: enable it to run multiple graphs in parallel
+
 //TODO: make sure there are enough contexts available
 void TaskScheduler::run_parallel(int n){
+    printf("++++++++++++++++++++++++++++\n");
+    printf(" Using scheduler flavour #1\n");
+    printf("++++++++++++++++++++++++++++\n");
     unsigned int in_flight(0), processed(0);
+    unsigned int current_event(0);
+    
     do {
-        // if possible start processing a new event
+        // if possible start processing of a new event
         if (in_flight < m_max_concurrent_events && processed+in_flight < n) {
             AlgoGraph* available_graph(0);
             for (unsigned int i=0, max = m_graphs.size() ; i<max; ++i) {
                 if (m_graphs[i]->is_available()) {available_graph = m_graphs[i];}
             }
-            Context* context = m_wb->getContext(in_flight); //TODO: get proper context !!
+            Context* context = m_wb->getContext(current_event);
             context->write(processed+in_flight, "event","event");
+            ++current_event;
             available_graph->run_parallel(context); 
             available_graph = 0;
             ++in_flight;
         }        
-        // put into the tbb queue whatever is available
-        bool queue_full = false;
-        TaskItem* result;
+        
+        TaskItem* result(0);  
+        AlgoBase* algo_instance(0);
+        bool queue_full(false);
+        bool algo_free(false);
+
+        // put back in the waiting queue what was not successful in the previous looping
         do {
-            queue_full = m_waiting_queue.try_pop(result);
-            if (queue_full) {
-                tbb::task* t = new( tbb::task::allocate_root() ) ConcreteTask(result, result->first->get_algo()); //TODO: limit to available algorithm instances
-                tbb::task::enqueue( *t);
+            queue_full = m_checked_queue.try_pop(result);
+            if (queue_full){
+                m_waiting_queue.push(result);
             }
         } while (queue_full);
         
+        // put into the tbb queue whatever is possible
+        queue_full = false;
+        do {
+            algo_instance = NULL;
+            queue_full = m_waiting_queue.try_pop(result);
+            if (queue_full) {
+                algo_free = available_algo_instances[result->first->get_identifier()]->try_pop(algo_instance);
+                if (algo_free) { 
+                    tbb::task* t = new( tbb::task::allocate_root() ) ConcreteTask(result, algo_instance);
+                    tbb::task::enqueue( *t);
+                } else {
+                    m_checked_queue.push(result);                }
+            }
+        } while (queue_full);
+        
+        // check for finished tasks and put the used algo instances back into the list of available ones
+        queue_full = false;
+        do {
+            queue_full = m_done_queue.try_pop(result);
+            if (queue_full) {
+                available_algo_instances[result->first->get_identifier()]->push(result->first->get_algo());
+            }
+        } while (queue_full); 
+                   
         // check for finished events
         for (unsigned int i=0, max = m_graphs.size() ; i<max; ++i) {
-            if (m_graphs[i]->finished()) {++processed; --in_flight; m_graphs[i]->reset(); }
+            if (m_graphs[i]->finished()) {++processed; --in_flight; m_graphs[i]->reset(); printf("Finished event\n"); }
         }        
     } while (processed < n);
     
 }
 
+
+// Scheduler using a bit mask for analysis of what can be run; for now a placeholder for missing implementation
+void TaskScheduler::run_parallel2(int n){
+    prepare_bit_pattern();
+    printf("++++++++++++++++++++++++++++\n");
+    printf(" Using scheduler flavour #2\n");
+    printf("   computed dependencies:\n");
+    print_bit_pattern();
+    printf("++++++++++++++++++++++++++++\n");
+        
+  
+}
+
+
 void TaskScheduler::run_sequentially(int n){
+    printf("++++++++++++++++++++++++++++\n");
+    printf(" Sequential scheduling\n");
+    printf("++++++++++++++++++++++++++++\n");
     for (unsigned int i = 0; i < n;++i) {
 	    Context* context = m_wb->getContext(i); 
         context->write(i, "event","event");
 		m_graphs[0]->run_sequentially(context); 
 	}
+}
+
+
+void TaskScheduler::print_bit_pattern() const {
+    const std::vector<TaskGraphNode*>& nodes = m_graphs[0]->get_all_nodes();
+    for (unsigned int i = 0, max = nodes.size(); i<max; ++i) {
+        printf("Algo %i: %i\n", i, nodes[i]->get_bit_pattern() );
+    }     
 }

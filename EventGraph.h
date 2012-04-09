@@ -55,28 +55,28 @@ public:
  */
 class EventGraph {
 public:
-	EventGraph(const char *name, tbb::flow::graph &the_graph, std::vector<AlgoBase*> algorithms) :
+    EventGraph(const char *name, tbb::flow::graph &the_graph, std::vector<AlgoBase*> algorithms) :
     m_name(name), m_algorithms(algorithms), m_Nalgorithms(algorithms.size()),
     m_graph(&the_graph) {make_my_node();};
-	virtual ~EventGraph() {};
-	void operator()();
-	const char* get_name() const {return m_name;};
+    virtual ~EventGraph() {};
+    void operator()();
+    const char* get_name() const {return m_name;};
     tbb::flow::broadcast_node< Context* >* get_start_node(){return m_startNode;};
     
 private:
-	//struct body;
-	const char* m_name;
-	std::vector<AlgoBase*> m_algorithms;
-	unsigned int m_Nalgorithms;
-	std::map<int, used_node* > m_created_nodes;
+    //struct body;
+    const char* m_name;
+    std::vector<AlgoBase*> m_algorithms;
+    unsigned int m_Nalgorithms;
+    std::map<int, used_node* > m_created_nodes;
         
-	// pointer to main graph elements
-	tbb::flow::graph* m_graph;
+    // pointer to main graph elements
+    tbb::flow::graph* m_graph;
     
-	// start nodes
+    // start nodes
     tbb::flow::broadcast_node< Context* >* m_startNode;    
     
-	void make_my_node();
+    void make_my_node();
 };
 
 

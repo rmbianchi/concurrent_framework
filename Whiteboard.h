@@ -47,7 +47,6 @@ private:
     tbb::spin_mutex my_mutex;
     std::vector<StringDataMap*> m_slots;
     std::vector<Context*> m_contexts;
-    //TODO: could make the graphs part of the slots as well
 
 };
 

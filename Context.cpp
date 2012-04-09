@@ -9,7 +9,7 @@
 #include "Context.h"
 #include "Whiteboard.h"
 
-Context::Context(const int i, Whiteboard& wb) : _number(i), wb(wb) {}
+Context::Context(const int i, Whiteboard& wb) : _number(i),  m_finished(false), wb(wb) {}
 Context::~Context() {}
 
 void Context::write ( const DataItem& item, const std::string &algo_name, const std::string &label ) {
