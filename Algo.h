@@ -23,10 +23,10 @@
 class AlgoBase {
 public:
     virtual ~AlgoBase(){};
-	virtual void body(Context* context) = 0;
-	virtual const std::vector<std::string> get_inputs() const = 0;
-	virtual const std::vector<std::string> get_outputs() const = 0;
-	virtual const char* get_name() const = 0;
+    virtual void body(Context* context) = 0;
+    virtual const std::vector<std::string> get_inputs() const = 0;
+    virtual const std::vector<std::string> get_outputs() const = 0;
+    virtual const char* get_name() const = 0;
     virtual void produces(const std::string&) = 0;
     virtual void reads(const std::string&) = 0;
 };
@@ -37,40 +37,40 @@ public:
 class ToyAlgo : public AlgoBase {
 public:
 
-	ToyAlgo(const char* name, int value, unsigned int time) : m_name(name), inputs(), outputs(), time(time), data(value) 
+    ToyAlgo(const char* name, int value, unsigned int time) : m_name(name), inputs(), outputs(), time(time), data(value) 
     {printf("Instantiating %s\n", m_name);};
     virtual ~ToyAlgo() {};
 
-	// actual implementations of the virtual methods
-	void body(Context *context) {
+    // actual implementations of the virtual methods
+    void body(Context *context) {
         unsigned int event(0);
         context->read(event, "event");
         printf("Algo '%s' - begin - EVENT: %i\n", m_name, event);
         sleep(time);
-  	    read(context);
-		publish(context);
+        read(context);
+        publish(context);
         printf("Algo '%s' - end - EVENT: %i\n", m_name, event);
-	};
-	const std::vector<std::string> get_inputs() const {return inputs;};
-	const std::vector<std::string> get_outputs() const {return outputs;};
-	const char* get_name() const {return m_name;};
+    };
+    const std::vector<std::string> get_inputs() const {return inputs;};
+    const std::vector<std::string> get_outputs() const {return outputs;};
+    const char* get_name() const {return m_name;};
 
     void produces(const std::string& out) {outputs.push_back(out);};
     void reads(const std::string& in) {inputs.push_back(in);};
 private:
-   	void publish(Context* context) {
-        for (t_tags::const_iterator i=outputs.begin(); i!=outputs.end(); ++i) context->write(data, m_name, *i);
+    void publish(Context* context) {
+       for (t_tags::const_iterator i=outputs.begin(); i!=outputs.end(); ++i) context->write(data, m_name, *i);
     };
     void read(Context* context) {
         for (t_tags::const_iterator i=inputs.begin(); i!=inputs.end(); ++i) context->read(data, *i);
     }; 
 protected:    
     typedef std::vector<std::string> t_tags;
-	const char* m_name;
+    const char* m_name;
     t_tags inputs;
-	t_tags outputs;
+    t_tags outputs;
     const unsigned int time;
-	DataItem data;
+    DataItem data;
 };
 
 /**
@@ -95,25 +95,22 @@ private:
 
 class EndAlgo : public AlgoBase{
 public:
-    EndAlgo(const char* name) : m_name(name), m_was_run(false) {};  
+    EndAlgo(const char* name) : m_name(name) {};  
     void body(Context* context) {
         tbb::queuing_mutex::scoped_lock lock;
         lock.acquire(my_mutex);
-        m_was_run = true;
+        context->set_finished();
         lock.release();
     };
-    const bool was_run() const {return m_was_run;};
-    void reset() {m_was_run = false;};
-	const std::vector<std::string> get_inputs() const {return std::vector<std::string>();};
-	const std::vector<std::string> get_outputs() const {return std::vector<std::string>();};
-	const char* get_name() const {return m_name;};
+    const std::vector<std::string> get_inputs() const {return std::vector<std::string>();};
+    const std::vector<std::string> get_outputs() const {return std::vector<std::string>();};
+    const char* get_name() const {return m_name;};
     void produces(const std::string&){};
     void reads(const std::string&){};
 
     
 private:
     const char* m_name;
-    bool m_was_run;
     tbb::queuing_mutex my_mutex;
 };
 
