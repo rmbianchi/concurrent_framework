@@ -27,8 +27,8 @@ std::vector<unsigned int> Scheduler::compute_dependencies(){
             product_indices[outputs[j]] = i;
         }
     }
-    unsigned int termination_requirement = 0;
     // use the mapping to create a bit pattern of input requirements
+    unsigned int termination_requirement = 0;
     for (unsigned int i = 0, n_algos = m_algos.size(); i < n_algos; ++i) {
         unsigned int requirements = 0;
         printf(" %i: %s\n",i,m_algos[i]->get_name());
@@ -48,11 +48,9 @@ std::vector<unsigned int> Scheduler::compute_dependencies(){
 
 
 Scheduler::Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, unsigned int max_concurrent_events) : m_algos(algorithms), m_wb(wb), m_max_concurrent_events(max_concurrent_events){
-    // Fill the data structure holding all available algorithm instances
-    //TODO: make this configurable; requires proper copy constructor of algos
-
     // put in a termination algo
     m_algos.push_back(new EndAlgo("*END*"));
+    // Fill the data structure holding all available algorithm instances
     const unsigned int size = m_algos.size();
     m_available_algo_instances.resize(size);
     for (unsigned int i = 0; i<size; ++i) {
@@ -67,33 +65,34 @@ void Scheduler::run_parallel(int n){
     printf("++++++++++++++++++++++++++++\n");
     printf(" Using scheduler flavour #2\n");
     printf("++++++++++++++++++++++++++++\n");
-    std::vector<std::pair<unsigned int, Context*> > bit_events(m_max_concurrent_events);
+    std::vector<std::pair<unsigned int, Context*> > event_states(m_max_concurrent_events);
     //get the bit patterns and sort by node id (like the available algos)
     size_t size = m_algos.size();
     // some book keeping vectors
     std::vector<std::vector<bool> > algo_has_run_in_eventid(m_max_concurrent_events, std::vector<bool>(size, false)); //TODO: replace   
-    std::vector<unsigned int> bits = compute_dependencies(); 
+    std::vector<unsigned int> bits = compute_dependencies();     
+    unsigned int in_flight(0), processed(0), current_event(0);  
     
-    unsigned int in_flight(0), processed(0);
-    unsigned int current_event(0);  
     do {        
         // check if a new event can and should be started
-        int available_eventid = -1;
         if (in_flight < m_max_concurrent_events && processed+in_flight < n) {
-            for (unsigned int i=0, max = bit_events.size() ; i<max; ++i) {
-                if (bit_events[i].second==NULL){ 
+            for (unsigned int i=0, max = event_states.size() ; i<max; ++i) {
+                if (event_states[i].second==NULL){ 
                     //since the pointer to the Context is NULL, this slot is free
-                    available_eventid = i;
                     // is the whiteboard available for this event?
                     Context* context(0);
-                    bool whiteboard_available = m_wb.get_context(context); //TODO
-                    int& i = available_eventid;
-                    bit_events[i].first = 0;
-                    bit_events[i].second = context;
-                    bit_events[i].second->write(processed+in_flight, "event","event");
-                    ++current_event;
-                    ++in_flight;  
-                    break;
+                    bool whiteboard_available = m_wb.get_context(context);
+                    if (whiteboard_available){
+                        algo_has_run_in_eventid[i]=std::vector<bool>(size, false);
+                        event_states[i].first = 0;
+                        event_states[i].second = context;
+                        event_states[i].second->write(processed+in_flight, "event","event");
+                        ++current_event;
+                        ++in_flight;  
+                        break;
+                    } else {
+                        printf("no whiteboard available\n");
+                    }
                 }
             } 
         }
@@ -103,10 +102,10 @@ void Scheduler::run_parallel(int n){
         for (unsigned int algo = 0; algo < size; ++algo) {
             // loop through all currently active events
             for (unsigned int event_id = 0; event_id < m_max_concurrent_events ; ++event_id) {
-                if (bit_events[event_id].second != NULL) {
+                if (event_states[event_id].second != NULL) {
                     // extract event_id specific quantities
-                    unsigned int& current_event_bits = bit_events[event_id].first;
-                    Context*& context = bit_events[event_id].second;
+                    unsigned int& current_event_bits = event_states[event_id].first;
+                    Context*& context = event_states[event_id].second;
                     std::vector<bool>& algo_has_run = algo_has_run_in_eventid[event_id];
                     // check bit pattern
                     unsigned int tmp = (current_event_bits & bits[algo]) ^ bits[algo];
@@ -116,7 +115,7 @@ void Scheduler::run_parallel(int n){
                         algo_free = m_available_algo_instances[algo]->try_pop(algo_instance);
                         if (algo_free) { 
                             AlgoTaskId* task = new AlgoTaskId(m_algos[algo],algo,event_id,context);    
-                            tbb::task* t = new( tbb::task::allocate_root() ) AlgoTask(task, &m_bits_done_queue);
+                            tbb::task* t = new( tbb::task::allocate_root() ) AlgoTask(task, &m_done_queue);
                             tbb::task::enqueue( *t); 
                             algo_has_run[algo] = true;
                         }
@@ -125,37 +124,41 @@ void Scheduler::run_parallel(int n){
             }
         }  
         
-        // check for finished tasks
-        // free the used algo instances
-        // update the set bits for the particular event
-        // then delete the TaskItemId        
-        AlgoTaskId* result(0);
-        bool queue_full(false);
-        do {
-            queue_full = m_bits_done_queue.try_pop(result);
-            if (queue_full) {
-                m_available_algo_instances[result->algo_id]->push(result->algo);
-                unsigned int old_bits(bit_events[result->event_id].first); 
-                unsigned int new_bits = old_bits | (1 << result->algo_id);
-                bit_events[result->event_id].first = new_bits;
-                delete result;
-            }
-        } while (queue_full);  
+        task_cleanup(event_states);
         
-        for (unsigned int i=0, max = bit_events.size() ; i<max; ++i) {
-            if (bit_events[i].second != NULL) {
-                if (bit_events[i].second->is_finished()) {
+        // check for finished events and clean up
+        for (unsigned int i=0, max = event_states.size() ; i<max; ++i) {
+            Context*& context = event_states[i].second;
+            if (context != NULL) {
+                if (context->is_finished()) {
+                    printf("Finished event\n"); 
                     ++processed; 
-                    --in_flight; 
-                    bit_events[i].second = NULL; 
-                    printf("Finished event\n"); } // TODO: add proper context disconnect; free used algo vector
+                    --in_flight;
+                    m_wb.release_context(context);
+                    context = NULL; 
+                } 
             }
         }     
     } while (processed < n);
     
 }
 
-void Scheduler::task_cleanup(){
-    
+
+// check for finished tasks, free the used algo instances and delete the AlgoTaskId
+// TODO: Much of it could be moved into the call back procedure of AlgoTask
+//       once we made all the state objects thread safe
+void Scheduler::task_cleanup(std::vector<std::pair<unsigned int, Context*> >& event_states){    
+    AlgoTaskId* result(0);
+    bool queue_full(false);
+    do {
+        queue_full = m_done_queue.try_pop(result);
+        if (queue_full) {
+            m_available_algo_instances[result->algo_id]->push(result->algo);
+            unsigned int old_bits(event_states[result->event_id].first); 
+            unsigned int new_bits = old_bits | (1 << result->algo_id);
+            event_states[result->event_id].first = new_bits;
+            delete result;
+        }
+    } while (queue_full);  
 }
 

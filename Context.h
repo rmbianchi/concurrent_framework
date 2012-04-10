@@ -29,8 +29,10 @@ public:
     void print_content() const;
     void set_finished(){m_finished=true;};
     const bool is_finished() const {return m_finished;};
-    const int _number;
+    const unsigned int get_slotnumber() const {return m_slotnumber;};
+    void reset();
 private:
+    const unsigned int m_slotnumber;
     bool m_finished;
     Whiteboard& wb; 
 };

@@ -13,10 +13,10 @@ include_directories(${TBB_INCLUDE_DIR})
 add_executable(CF4HepDemonstrator dependency_graph.cpp Whiteboard.cpp Context.cpp)
 target_link_libraries(CF4HepDemonstrator ${TBB_LIBRARIES})
 
-add_executable(CF4HepTaskGraphDemonstrator taskgraph_example.cpp Whiteboard.cpp Context.cpp TaskSchedule.cpp Scheduler.cpp)
+add_executable(CF4HepTaskGraphDemonstrator taskgraph_example.cpp Whiteboard.cpp Context.cpp TaskSchedule.cpp)
 target_link_libraries(CF4HepTaskGraphDemonstrator ${TBB_LIBRARIES})
 
-add_executable(CF4HepTaskBitsDemonstrator taskbits_example.cpp Whiteboard.cpp Context.cpp TaskSchedule.cpp Scheduler.cpp)
+add_executable(CF4HepTaskBitsDemonstrator taskbits_example.cpp Whiteboard.cpp Context.cpp Scheduler.cpp)
 target_link_libraries(CF4HepTaskBitsDemonstrator ${TBB_LIBRARIES})
 
 #---Configuration-------------------------------------------------------------------

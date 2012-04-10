@@ -39,11 +39,12 @@ public:
     const char* getName() {return my_name;};
     // I/O methods
     // TODO: do a proper handling of object ownership 
-    bool read(DataItem&, const std::string& label, const int slot_number) const;
-    void write(const DataItem& item, const::std::string& label, const int slot_number); 
+    bool read(DataItem&, const std::string& label, const unsigned int slot_number) const;
+    void write(const DataItem& item, const::std::string& label, const unsigned int slot_number); 
     void notify(const void* what = 0);
-    void print_slot_content(const int slot_number) const; 
+    void print_slot_content(const unsigned  int slot_number) const; 
     bool get_context(Context*&);
+    void release_context(Context*& context);
 
 private:
     const char* my_name;

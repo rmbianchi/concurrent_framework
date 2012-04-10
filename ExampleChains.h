@@ -50,4 +50,24 @@ std::vector<AlgoBase*> exampleChain2(){
     return algos;
 };
 
+std::vector<AlgoBase*> exampleChain3(){
+    std::vector<AlgoBase*> algos;
+    AlgoBase* algo1 = new ToyAlgo("algo1",1, 0); algo1->produces("DataTypeA");
+    AlgoBase* algo2 = new ToyAlgo("algo2",2, 0); algo2->reads("DataTypeA"); algo2->produces("DataTypeE");
+    AlgoBase* algo3 = new ToyAlgo("algo3",3, 0); algo3->produces("DataTypeB");
+    AlgoBase* algo4 = new ToyAlgo("algo4",4, 0); algo4->reads("DataTypeB");algo4->produces("DataTypeC");
+    AlgoBase* algo5 = new ToyAlgo("algo5",4, 0); algo5->reads("DataTypeC");algo5->produces("DataTypeF");
+    AlgoBase* algo6 = new ToyAlgo("algo6",4, 0); algo6->produces("DataTypeD");
+    AlgoBase* algo7 = new ToyAlgo("algo7",4, 0); algo7->reads("DataTypeB");
+    algos.push_back(algo1);
+    algos.push_back(algo2);
+    algos.push_back(algo3);
+    algos.push_back(algo4);	
+    algos.push_back(algo5);
+    algos.push_back(algo6);
+    algos.push_back(algo7);	
+    return algos;
+};
+
+
 #endif

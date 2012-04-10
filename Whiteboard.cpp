@@ -11,18 +11,21 @@
 
 
 Whiteboard::Whiteboard(const char* name, const int i) : my_name(name), number_of_slots(i) {
-  for (int i=0; i<=number_of_slots; ++i){
-      m_contexts.push_back(registry_type(new Context(i,*this), ContextStatus()));
-    m_slots.push_back(new StringDataMap());
-  }
-
+    printf("Init whiteboard with %i slots.\n",i);
+    for (int i=0; i< number_of_slots; ++i){
+        m_contexts.push_back(registry_type(new Context(i,*this), ContextStatus()));
+        m_slots.push_back(new StringDataMap());
+    }
 }
 
 Whiteboard::~Whiteboard() {
-  //TODO: delete the slots
+    for (int i=0; i< number_of_slots; ++i){
+        delete m_contexts[i].first;
+        delete m_slots[i];
+    }
 }
 
-void Whiteboard::write ( const DataItem &item, const std::string &key, const int slot_number) {
+void Whiteboard::write ( const DataItem &item, const std::string &key, const unsigned int slot_number) {
 
     // use accessor as a cursor in the concurrent data structure
     // releases lock at destruction of accessor 
@@ -40,7 +43,7 @@ void Whiteboard::write ( const DataItem &item, const std::string &key, const int
 }
 
 // TODO: this operation is *not* thread safe
-void Whiteboard::print_slot_content(const int slot_number) const {
+void Whiteboard::print_slot_content(const unsigned  int slot_number) const {
     printf("++++++++++++++++++++++++\nContent of slot %i:\n", slot_number);
     StringDataMap::const_iterator i;
     StringDataMap* slot = m_slots[slot_number];
@@ -50,7 +53,7 @@ void Whiteboard::print_slot_content(const int slot_number) const {
     printf("++++++++++++++++++++++++\n");
 }
 
-bool Whiteboard::read(DataItem& item, const std::string& label, const int slot_number) const {
+bool Whiteboard::read(DataItem& item, const std::string& label, const unsigned int slot_number) const {
   StringDataMap::const_accessor a; 
   StringDataMap* slot = m_slots[slot_number]; 
   bool successful = slot->find(a, label);
@@ -75,4 +78,15 @@ bool Whiteboard::get_context(Context*& context){
         }
     }
     return false;
+}
+
+void Whiteboard::release_context(Context*& context){
+    // TODO: for now slot and context number are identical
+    // will change in the future
+    const unsigned int& i = context->get_slotnumber();
+    print_slot_content(i);
+    context->reset();
+    m_slots[i]->clear();
+    m_contexts[i].second = available; 
+
 }

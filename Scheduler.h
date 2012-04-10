@@ -17,6 +17,7 @@
 #include "tbb/concurrent_queue.h"
 #include "tbb/concurrent_vector.h"
 #include "tbb/task.h"
+#include "tbb/atomic.h"
 //include fwk
 #include "Algo.h"
 #include "Context.h"
@@ -51,14 +52,15 @@ class Scheduler {
 public:
     Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, unsigned int max_concurrent_events);
     void run_parallel(int n);
-    void task_cleanup();
+    void task_cleanup(std::vector<std::pair<unsigned int, Context*> >& event_states);
 private:
     std::vector<unsigned int> compute_dependencies();
     std::vector<AlgoBase*> m_algos;
     Whiteboard& m_wb;
     unsigned int m_max_concurrent_events;
     std::vector<tbb::concurrent_queue<AlgoBase*>*> m_available_algo_instances;
-    tbb::concurrent_queue<AlgoTaskId*> m_bits_done_queue;
+    tbb::concurrent_queue<AlgoTaskId*> m_done_queue;
+    //std::vector<std::pair<tbb::atomic<unsigned int>, Context*> > event_states;
 };
 
 
