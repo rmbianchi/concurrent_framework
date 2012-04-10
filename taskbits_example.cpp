@@ -16,7 +16,7 @@
 #include "ExampleChains.h"
 #include "Helpers.h"
 #include "Whiteboard.h"
-#include "TaskSchedule.h"
+#include "Scheduler.h"
 
 
 tbb::spin_mutex my_mutex;
@@ -24,14 +24,14 @@ tbb::spin_mutex my_mutex;
 //===========================
 //		Scheduler
 //===========================
-int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain) {
+int schedule(Whiteboard& wb, std::vector<AlgoBase*>& chain) {
     
     // time it
     timestamp_t tstart = get_timestamp();
     
     // set up the scheduler
-    TaskScheduler scheduler(chain, wb, 2);
-    scheduler.run_parallel2(2);
+    Scheduler scheduler(chain, wb, 2);
+    scheduler.run_parallel(2);
 
     tbb::spin_mutex::scoped_lock lock;
     
@@ -76,13 +76,13 @@ int main(int argc, char *argv[]) {
         timestamp_t time = 0;
         int times = 0;
         for (int nn=0; nn<5; ++nn) {
-            time += schedule(&wb, chain);
+            time += schedule(wb, chain);
             ++times;
         }
         printf("%i threads -  Time: %f\n\n\n", num_threads, time/(double)times );
 	}
     else {
-        schedule(&wb, chain);
+        schedule(wb, chain);
     }
     
     wb.print_slot_content(0);

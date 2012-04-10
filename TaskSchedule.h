@@ -42,31 +42,6 @@ public:
     AlgoBase* m_algo_instance;
 };
 
-
-// the BitsTaskItem is the item used for call back once tbb finished the BitsTask
-class BitsTaskId {
-public:
-    BitsTaskId(AlgoBase* algo, unsigned int algo_id, unsigned int event_id, Context* context): algo(algo),algo_id(algo_id), event_id(event_id), context(context) {};
-    AlgoBase* algo;
-    unsigned int algo_id;
-    unsigned int event_id;
-    Context* context;
-};
-
-/**
- * The tbb::task implementation that gets passed to tbb::task::enqueue
- * as opposed to BitsTaskItem it can be disposed by tbb (as per design)
- * it specifically gets the done_queue for talk back
- */
-class BitsTask : public tbb::task {
-public:
-    BitsTask(BitsTaskId* task, tbb::concurrent_queue<BitsTaskId*>* done_queue): m_task(task), m_done_queue(done_queue) {};    
-    tbb::task* execute();
-    BitsTaskId* m_task;
-    tbb::concurrent_queue<BitsTaskId*>* m_done_queue;
-};
-
-
 /**
  * Node for a TaskGraph; the task graph does the book keeping of what can be run. 
  */
@@ -84,9 +59,6 @@ public:
     void notify_sucessors(Context* context);
     void execute(Context* context, AlgoBase* algo_instance);
     unsigned int n_of_sucessors(){return m_sucessors.size();};
-    // parts relevant for bit pattern creation
-    const unsigned int get_bit_pattern() const {return m_bitpattern;};
-    void pass_bit_pattern(unsigned int i);
     const unsigned int get_identifier() const {return m_identifier;};
 
 private:
@@ -114,9 +86,6 @@ public:
     const bool finished() const {if (m_current_context==NULL) return false ; return m_current_context->is_finished();};
     const bool is_available() const {return m_available;};
     void reset(){m_available = true; m_current_context = NULL;};
-    // parts relevant for bit pattern creation
-    void pass_bit_pattern(){m_start_node->pass_bit_pattern(0);};
-
     
 private:
     std::vector<AlgoBase*> m_algorithms;
@@ -132,8 +101,6 @@ private:
 
 };
 
-
-
 /**
  * The TaskScheduler pushes tbb:tasks to the tbb internals, based on two inputs:
  *    1) the TaskNodes that could be run
@@ -145,24 +112,18 @@ public:
     TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events);
     void add_to_waiting_queue(TaskItem* graph_node);
     void add_to_done_queue(TaskItem* graph_node);
-    void print_waiting_queue(); 
     void run_parallel(int n);     // run n events parallel
-    void run_parallel2(int n);    // run n events with alternative scheduler
     void run_sequentially(int n); // run n events sequentially
-    // parts relevant for bit pattern creation
-    void prepare_bit_pattern();
-    void print_bit_pattern() const;
     
 private:
     unsigned int m_max_concurrent_events;
     std::vector<AlgoBase*> m_algos;
     std::vector<AlgoGraph*> m_graphs;
-    Whiteboard* m_wb;
     std::vector<tbb::concurrent_queue<AlgoBase*>*> available_algo_instances;
     tbb::concurrent_queue<TaskItem*> m_waiting_queue;
     tbb::concurrent_queue<TaskItem*> m_checked_queue;
     tbb::concurrent_queue<TaskItem*> m_done_queue;
-    tbb::concurrent_queue<BitsTaskId*> m_bits_done_queue;
+    Whiteboard* m_wb;
 };
 
 #endif

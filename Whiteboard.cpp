@@ -12,7 +12,7 @@
 
 Whiteboard::Whiteboard(const char* name, const int i) : my_name(name), number_of_slots(i) {
   for (int i=0; i<=number_of_slots; ++i){
-    m_contexts.push_back(new Context(i,*this));
+      m_contexts.push_back(registry_type(new Context(i,*this), ContextStatus()));
     m_slots.push_back(new StringDataMap());
   }
 
@@ -55,7 +55,7 @@ bool Whiteboard::read(DataItem& item, const std::string& label, const int slot_n
   StringDataMap* slot = m_slots[slot_number]; 
   bool successful = slot->find(a, label);
   if (successful){
-    item =a->second; 
+    item = a->second; 
     //printf("Whiteboard - reading of %s successful: %i \n", label.c_str(), item);
   } else {
     printf("Whiteboard - reading of %s failed.\n", label.c_str());
@@ -65,6 +65,14 @@ bool Whiteboard::read(DataItem& item, const std::string& label, const int slot_n
 }
 
 //TODO: safe guard it against exceeded range!
-Context* Whiteboard::getContext(const int i){
-    return m_contexts[i];
+bool Whiteboard::get_context(Context*& context){
+    // which context is free?
+    for (unsigned int i=0, max=m_contexts.size(); i<max; ++i) {
+        if (m_contexts[i].second == available) {
+            context = m_contexts[i].first;
+            m_contexts[i].second = in_use;
+            return true;
+        }
+    }
+    return false;
 }

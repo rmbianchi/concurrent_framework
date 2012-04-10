@@ -26,7 +26,11 @@ class Subscriber;
 /**
  * the Whiteboard class features a concurrent_hash_map to store published products
  * from modules.
+ * As opposed to operations done via Context this class is not thread safe.
  */
+
+enum ContextStatus {available, in_use, in_cleanup};
+
 class Whiteboard {
 public:
     // methods
@@ -39,15 +43,15 @@ public:
     void write(const DataItem& item, const::std::string& label, const int slot_number); 
     void notify(const void* what = 0);
     void print_slot_content(const int slot_number) const; 
-    Context* getContext(const int i);
+    bool get_context(Context*&);
 
 private:
     const char* my_name;
     const int number_of_slots;
     tbb::spin_mutex my_mutex;
     std::vector<StringDataMap*> m_slots;
-    std::vector<Context*> m_contexts;
-
+    typedef std::pair<Context*,ContextStatus> registry_type;
+    std::vector<registry_type> m_contexts; 
 };
 
 #endif /* WHITEBOARD_H_ */
