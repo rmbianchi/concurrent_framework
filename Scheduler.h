@@ -13,6 +13,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <deque>
 // include tbb
 #include "tbb/concurrent_queue.h"
 #include "tbb/concurrent_vector.h"
@@ -25,12 +26,14 @@
 /**
  * The AlgoTaskId the item used for call back once tbb finished the AlgoTask
  */
+class EventState;
+
 class AlgoTaskId {
 public:
-    AlgoTaskId(AlgoBase* algo, unsigned int algo_id, unsigned int event_id, Context* context): algo_(algo),algo_id_(algo_id), event_id_(event_id), context_(context) {};
+    AlgoTaskId(AlgoBase* algo, unsigned int algo_id, EventState* event_state, Context* context): algo_(algo),algo_id_(algo_id), event_state_(event_state), context_(context) {};
     AlgoBase* algo_;
     unsigned int algo_id_;
-    unsigned int event_id_;
+    EventState* event_state_;
     Context* context_;
 };
 
@@ -48,11 +51,19 @@ public:
 };
 
 
+class EventState{
+public:
+    EventState(unsigned int algos) : state(0), context(0), started_algos(algos,false){};
+    unsigned int state;
+    Context* context;
+    std::vector<bool> started_algos;
+};
+
 class Scheduler {
 public:
     Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, unsigned int max_concurrent_events);
     void run_parallel(int n);
-    void task_cleanup(std::vector<std::pair<unsigned int, Context*> >& event_states);
+    void task_cleanup(std::deque<EventState*>& event_states);
 private:
     std::vector<unsigned int> compute_dependencies();
     std::vector<AlgoBase*> algos_;
