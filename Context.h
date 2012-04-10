@@ -27,14 +27,14 @@ public:
     bool read(DataItem&, const std::string& label) const;
     void write(const DataItem& item, const::std::string& algo_name, const::std::string& label); 
     void print_content() const;
-    void set_finished(){m_finished=true;};
-    const bool is_finished() const {return m_finished;};
-    const unsigned int get_slotnumber() const {return m_slotnumber;};
+    void set_finished(){finished_=true;};
+    const bool is_finished() const {return finished_;};
+    const unsigned int get_slotnumber() const {return slotnumber_;};
     void reset();
 private:
-    const unsigned int m_slotnumber;
-    bool m_finished;
-    Whiteboard& wb; 
+    const unsigned int slotnumber_;
+    bool finished_;
+    Whiteboard& wb_; 
 };
 
 #endif /* CONTEXT_H_ */

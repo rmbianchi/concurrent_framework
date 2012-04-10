@@ -9,22 +9,22 @@
 #include "Context.h"
 #include "Whiteboard.h"
 
-Context::Context(const int i, Whiteboard& wb) : m_slotnumber(i),  m_finished(false), wb(wb) {}
+Context::Context(const int i, Whiteboard& wb) : slotnumber_(i),  finished_(false), wb_(wb) {}
 Context::~Context() {}
 
 void Context::write ( const DataItem& item, const std::string &algo_name, const std::string &label ) {
-    wb.write(item,label,m_slotnumber);
+    wb_.write(item,label, slotnumber_);
     //wb->write(item,algo_name+":"+label,_number);
 }
 
 void Context::print_content() const {
-    wb.print_slot_content(m_slotnumber);
+    wb_.print_slot_content(slotnumber_);
 }
 
 bool Context::read(DataItem& item, const std::string& label) const {
-  return wb.read(item, label, m_slotnumber);
+  return wb_.read(item, label, slotnumber_);
 }
 
 void Context::reset(){
-    m_finished = false;
+    finished_ = false;
 }

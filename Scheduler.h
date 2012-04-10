@@ -27,11 +27,11 @@
  */
 class AlgoTaskId {
 public:
-    AlgoTaskId(AlgoBase* algo, unsigned int algo_id, unsigned int event_id, Context* context): algo(algo),algo_id(algo_id), event_id(event_id), context(context) {};
-    AlgoBase* algo;
-    unsigned int algo_id;
-    unsigned int event_id;
-    Context* context;
+    AlgoTaskId(AlgoBase* algo, unsigned int algo_id, unsigned int event_id, Context* context): algo_(algo),algo_id_(algo_id), event_id_(event_id), context_(context) {};
+    AlgoBase* algo_;
+    unsigned int algo_id_;
+    unsigned int event_id_;
+    Context* context_;
 };
 
 /**
@@ -41,10 +41,10 @@ public:
  */
 class AlgoTask : public tbb::task {
 public:
-    AlgoTask(AlgoTaskId* task, tbb::concurrent_queue<AlgoTaskId*>* done_queue): m_task(task), m_done_queue(done_queue){};    
+    AlgoTask(AlgoTaskId* task, tbb::concurrent_queue<AlgoTaskId*>* done_queue): task_(task), done_queue_(done_queue){};    
     tbb::task* execute();
-    AlgoTaskId* m_task;
-    tbb::concurrent_queue<AlgoTaskId*>* m_done_queue;
+    AlgoTaskId* task_;
+    tbb::concurrent_queue<AlgoTaskId*>* done_queue_;
 };
 
 
@@ -55,11 +55,11 @@ public:
     void task_cleanup(std::vector<std::pair<unsigned int, Context*> >& event_states);
 private:
     std::vector<unsigned int> compute_dependencies();
-    std::vector<AlgoBase*> m_algos;
-    Whiteboard& m_wb;
-    unsigned int m_max_concurrent_events;
-    std::vector<tbb::concurrent_queue<AlgoBase*>*> m_available_algo_instances;
-    tbb::concurrent_queue<AlgoTaskId*> m_done_queue;
+    std::vector<AlgoBase*> algos_;
+    Whiteboard& wb_;
+    unsigned int max_concurrent_events_;
+    std::vector<tbb::concurrent_queue<AlgoBase*>*> available_algo_instances_;
+    tbb::concurrent_queue<AlgoTaskId*> done_queue_;
     //std::vector<std::pair<tbb::atomic<unsigned int>, Context*> > event_states;
 };
 

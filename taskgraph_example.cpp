@@ -84,9 +84,6 @@ int main(int argc, char *argv[]) {
     else {
         schedule(&wb, chain);
     }
-    
-    wb.print_slot_content(0);
-    wb.print_slot_content(1);
 
     // do a final cleanup
     for (unsigned int i = 0; i < chain.size(); ++i) {

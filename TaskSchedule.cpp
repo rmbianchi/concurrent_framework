@@ -157,7 +157,7 @@ void AlgoGraph::prepare_graph(){
 //===========================
 //		TaskScheduler
 //===========================
-TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(0), m_wb(wb) {    
+TaskScheduler::TaskScheduler(std::vector<AlgoBase*> algos, Whiteboard* wb, unsigned int max_concurrent_events): m_max_concurrent_events(max_concurrent_events), m_algos(0), wb_(wb) {    
     assert(max_concurrent_events>0); // we want to have at least one graph
     for (unsigned int graph_index = 0; graph_index < max_concurrent_events; ++graph_index) {
         m_graphs.push_back(new AlgoGraph(algos));
@@ -208,7 +208,7 @@ void TaskScheduler::run_parallel(int n){
                 if (m_graphs[i]->is_available()) {available_graph = m_graphs[i];}
             }
             Context* context(0);
-            m_wb->get_context(context);
+            wb_->get_context(context);
             context->write(processed+in_flight, "event","event");
             ++current_event;
             available_graph->run_parallel(context); 
@@ -267,7 +267,7 @@ void TaskScheduler::run_sequentially(int n){
     printf("++++++++++++++++++++++++++++\n");
     for (unsigned int i = 0; i < n;++i) {
 	    Context* context(0);
-        m_wb->get_context(context); 
+        wb_->get_context(context); 
         context->write(i, "event","event");
 		m_graphs[0]->run_sequentially(context); 
 	}

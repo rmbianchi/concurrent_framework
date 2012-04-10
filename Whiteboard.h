@@ -36,7 +36,7 @@ public:
     // methods
     Whiteboard( const char* name, const int number_of_slots);
     virtual ~Whiteboard();
-    const char* getName() {return my_name;};
+    const char* get_name() {return name_;};
     // I/O methods
     // TODO: do a proper handling of object ownership 
     bool read(DataItem&, const std::string& label, const unsigned int slot_number) const;
@@ -47,12 +47,12 @@ public:
     void release_context(Context*& context);
 
 private:
-    const char* my_name;
-    const int number_of_slots;
+    const char* name_;
+    const int number_of_slots_;
     tbb::spin_mutex my_mutex;
-    std::vector<StringDataMap*> m_slots;
+    std::vector<StringDataMap*> slots_;
     typedef std::pair<Context*,ContextStatus> registry_type;
-    std::vector<registry_type> m_contexts; 
+    std::vector<registry_type> contexts_; 
 };
 
 #endif /* WHITEBOARD_H_ */

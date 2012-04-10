@@ -123,7 +123,7 @@ private:
     tbb::concurrent_queue<TaskItem*> m_waiting_queue;
     tbb::concurrent_queue<TaskItem*> m_checked_queue;
     tbb::concurrent_queue<TaskItem*> m_done_queue;
-    Whiteboard* m_wb;
+    Whiteboard* wb_;
 };
 
 #endif

@@ -31,7 +31,8 @@ int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain) {
 
     // loop over GraphSchedules and runs the jobs
     for (unsigned int ch = 0; ch < 2;++ch) {
-        Context* context = wb->getContext(ch); 
+        Context* context(0);
+        wb->get_context(context); 
         context->write(ch, "event","event");
         printf("\nCreating graph of event %i:\n", ch);
         EventGraph event_graph("a_name", g, chain);

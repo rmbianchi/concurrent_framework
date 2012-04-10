@@ -37,40 +37,40 @@ public:
 class ToyAlgo : public AlgoBase {
 public:
 
-    ToyAlgo(const char* name, int value, unsigned int time) : m_name(name), inputs(), outputs(), time(time), data(value) 
-    {printf("Instantiating %s\n", m_name);};
+    ToyAlgo(const char* name, int value, unsigned int time) : name_(name), inputs_(), outputs_(), time_(time), data_(value) 
+    {printf("Instantiating %s\n", name_);};
     virtual ~ToyAlgo() {};
 
     // actual implementations of the virtual methods
     void body(Context *context) {
         unsigned int event(0);
         context->read(event, "event");
-        printf("Algo '%s' - begin - EVENT: %i\n", m_name, event);
-        sleep(time);
+        printf("Algo '%s' - begin - EVENT: %i\n", name_, event);
+        sleep(time_);
         read(context);
         publish(context);
-        printf("Algo '%s' - end - EVENT: %i\n", m_name, event);
+        printf("Algo '%s' - end - EVENT: %i\n", name_, event);
     };
-    const std::vector<std::string> get_inputs() const {return inputs;};
-    const std::vector<std::string> get_outputs() const {return outputs;};
-    const char* get_name() const {return m_name;};
+    const std::vector<std::string> get_inputs() const {return inputs_;};
+    const std::vector<std::string> get_outputs() const {return outputs_;};
+    const char* get_name() const {return name_;};
 
-    void produces(const std::string& out) {outputs.push_back(out);};
-    void reads(const std::string& in) {inputs.push_back(in);};
+    void produces(const std::string& out) {outputs_.push_back(out);};
+    void reads(const std::string& in) {inputs_.push_back(in);};
 private:
     void publish(Context* context) {
-       for (t_tags::const_iterator i=outputs.begin(); i!=outputs.end(); ++i) context->write(data, m_name, *i);
+       for (t_tags::const_iterator i=outputs_.begin(); i!=outputs_.end(); ++i) context->write(data_, name_, *i);
     };
     void read(Context* context) {
-        for (t_tags::const_iterator i=inputs.begin(); i!=inputs.end(); ++i) context->read(data, *i);
+        for (t_tags::const_iterator i=inputs_.begin(); i!=inputs_.end(); ++i) context->read(data_, *i);
     }; 
 protected:    
     typedef std::vector<std::string> t_tags;
-    const char* m_name;
-    t_tags inputs;
-    t_tags outputs;
-    const unsigned int time;
-    DataItem data;
+    const char* name_;
+    t_tags inputs_;
+    t_tags outputs_;
+    const unsigned int time_;
+    DataItem data_;
 };
 
 /**
@@ -80,16 +80,16 @@ protected:
  */
 class NonReentrantToyAlgo : public ToyAlgo{
 public:
-    NonReentrantToyAlgo(const char* name, int value, unsigned int time) : ToyAlgo(name, value, time), m_counter(0){};  
+    NonReentrantToyAlgo(const char* name, int value, unsigned int time) : ToyAlgo(name, value, time), counter_(0){};  
     void body(Context* context) {
         tbb::queuing_mutex::scoped_lock lock;
-        lock.acquire(my_mutex);
-        ++m_counter;ToyAlgo::body(context); printf("Algo '%s' unsafe counter: %i\n", m_name, m_counter);
+        lock.acquire(mutex_);
+        ++counter_;ToyAlgo::body(context); printf("Algo '%s' unsafe counter: %i\n", name_, counter_);
         lock.release();
     };
 private:
-    int m_counter;
-    tbb::queuing_mutex my_mutex;
+    int counter_;
+    tbb::queuing_mutex mutex_;
     
 };
 
