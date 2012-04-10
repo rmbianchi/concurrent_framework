@@ -27,7 +27,7 @@ std::vector<unsigned int> Scheduler::compute_dependencies(){
             product_indices[outputs[j]] = i;
         }
     }
-    unsigned termination_requirement = 0;
+    unsigned int termination_requirement = 0;
     // use the mapping to create a bit pattern of input requirements
     for (unsigned int i = 0, n_algos = m_algos.size(); i < n_algos; ++i) {
         unsigned int requirements = 0;
@@ -37,12 +37,11 @@ std::vector<unsigned int> Scheduler::compute_dependencies(){
             unsigned int input_index = product_indices[inputs[j]];
             requirements = requirements | (1 << input_index);
             printf("\tconnecting to %s (via '%s')\n", m_algos[input_index]->get_name(), inputs[j].c_str());
-            termination_requirement = termination_requirement | requirements;
-        
         }
         all_requirements[i] = requirements;
+        termination_requirement = termination_requirement | (1 << i);
     }
-    all_requirements[(m_algos.size()-1)] = termination_requirement;
+    all_requirements[(m_algos.size()-1)] = termination_requirement >> 1; // the endalgo has to wait for everything else, except for itself
     return all_requirements;  
 }
 
@@ -52,10 +51,8 @@ Scheduler::Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, u
     // Fill the data structure holding all available algorithm instances
     //TODO: make this configurable; requires proper copy constructor of algos
 
-    // put in a termination node
-    // TODO: do the termination elsewhere
+    // put in a termination algo
     m_algos.push_back(new EndAlgo("*END*"));
-
     const unsigned int size = m_algos.size();
     m_available_algo_instances.resize(size);
     for (unsigned int i = 0; i<size; ++i) {
@@ -87,22 +84,21 @@ void Scheduler::run_parallel(int n){
                 if (bit_events[i].second==NULL){ 
                     //since the pointer to the Context is NULL, this slot is free
                     available_eventid = i;
+                    // is the whiteboard available for this event?
+                    Context* context(0);
+                    bool whiteboard_available = m_wb.get_context(context); //TODO
+                    int& i = available_eventid;
+                    bit_events[i].first = 0;
+                    bit_events[i].second = context;
+                    bit_events[i].second->write(processed+in_flight, "event","event");
+                    ++current_event;
+                    ++in_flight;  
+                    break;
                 }
             } 
         }
-        // if possible start processing of a new event
-        if (available_eventid !=-1) {
-            // is the whiteboard available for this event?
-            Context* context(0);
-            bool whiteboard_available = m_wb.get_context(context); //TODO
-            int& i = available_eventid;
-            bit_events[i].first = 0;
-            bit_events[i].second = context;
-            bit_events[i].second->write(processed+in_flight, "event","event");
-            ++current_event;
-            ++in_flight;               
-        }
         
+        // now schedule whatever can be scheduled
         // loop through the entire vector of algo bits
         for (unsigned int algo = 0; algo < size; ++algo) {
             // loop through all currently active events
@@ -156,6 +152,10 @@ void Scheduler::run_parallel(int n){
             }
         }     
     } while (processed < n);
+    
+}
+
+void Scheduler::task_cleanup(){
     
 }
 

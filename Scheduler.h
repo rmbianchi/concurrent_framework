@@ -51,6 +51,7 @@ class Scheduler {
 public:
     Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, unsigned int max_concurrent_events);
     void run_parallel(int n);
+    void task_cleanup();
 private:
     std::vector<unsigned int> compute_dependencies();
     std::vector<AlgoBase*> m_algos;
