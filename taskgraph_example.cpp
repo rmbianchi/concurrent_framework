@@ -24,14 +24,14 @@ tbb::spin_mutex my_mutex;
 //===========================
 //		Scheduler
 //===========================
-int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain) {
+int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain, unsigned int events, unsigned int n_parallel) {
     
     // time it
     timestamp_t tstart = get_timestamp();
     
     // set up the scheduler
-    TaskScheduler scheduler(chain, wb, 2);
-    scheduler.run_parallel(2);
+    TaskScheduler scheduler(chain, wb, 8);
+    scheduler.run_parallel(400);
 
     tbb::spin_mutex::scoped_lock lock;
     
@@ -44,6 +44,7 @@ int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain) {
     timestamp_t tstop = get_timestamp();
     timestamp_t totTime = tstop-tstart;
     printf("elapsed time: %llu \n", totTime);
+    printf("time/event:\t\t %llu\n",totTime/events);
     return totTime;
 }
 
@@ -55,11 +56,9 @@ int main(int argc, char *argv[]) {
     
     // default threads
     int num_threads = 4;
-    // declaring a Whiteboard instance with a number of internal slots
-    Whiteboard wb("Central Whiteboard", 3);
     // create a pool of toy algorithms
     printf("Creating the pool of algos:\n");
-    std::vector<AlgoBase*> chain = exampleChain2();
+    std::vector<AlgoBase*> chain = exampleChain3();
     
     // command-line parser
     if ( argc > 1 ) num_threads = atoi(argv[1]);
@@ -68,6 +67,11 @@ int main(int argc, char *argv[]) {
     // enabling a certain number of working threads
     printf("Init %i working threads\n", num_threads);
     tbb::task_scheduler_init init(num_threads); //apparently this value can be changed only once per application run
+
+    // declaring a Whiteboard instance with a number of internal slots
+    Whiteboard wb("Central Whiteboard", 20);
+    unsigned int events(400);
+    unsigned int n_parallel(8);
     
     bool test = false;
     if ( argc > 3 && atoi(argv[3]) == 1 ) test = true;
@@ -76,13 +80,13 @@ int main(int argc, char *argv[]) {
         timestamp_t time = 0;
         int times = 0;
         for (int nn=0; nn<5; ++nn) {
-            time += schedule(&wb, chain);
+            time += schedule(&wb, chain, events, n_parallel);
             ++times;
         }
         printf("%i threads -  Time: %f\n\n\n", num_threads, time/(double)times );
 	}
     else {
-        schedule(&wb, chain);
+        schedule(&wb, chain, events, n_parallel);
     }
 
     // do a final cleanup

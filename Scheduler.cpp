@@ -27,6 +27,9 @@ Scheduler::Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, u
         available_algo_instances_[i] = new tbb::concurrent_queue<AlgoBase*>();   
         available_algo_instances_[i]->push(algos_[i]);
     }
+    for (unsigned int i = 0; i < max_concurrent_events_; ++i){
+        available_algo_instances_[size-1]->push(algos_[size-1]);
+    }
 }  
 
 

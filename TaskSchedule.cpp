@@ -210,6 +210,7 @@ void TaskScheduler::run_parallel(int n){
             Context* context(0);
             wb_->get_context(context);
             context->write(processed+in_flight, "event","event");
+            printf("starting event\n");
             ++current_event;
             available_graph->run_parallel(context); 
             available_graph = 0;
@@ -254,7 +255,13 @@ void TaskScheduler::run_parallel(int n){
                    
         // check for finished events
         for (unsigned int i=0, max = m_graphs.size() ; i<max; ++i) {
-            if (m_graphs[i]->finished()) {++processed; --in_flight; m_graphs[i]->reset(); printf("Finished event\n"); }
+            if (m_graphs[i]->finished()) {
+                ++processed; 
+                --in_flight; 
+                wb_->release_context(m_graphs[i]->get_context()); 
+                m_graphs[i]->reset();  
+                printf("Finished event\n");
+            }
         }        
     } while (processed < n);
     

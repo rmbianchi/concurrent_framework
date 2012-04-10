@@ -97,10 +97,10 @@ class EndAlgo : public AlgoBase{
 public:
     EndAlgo(const char* name) : m_name(name) {};  
     void body(Context* context) {
-        tbb::queuing_mutex::scoped_lock lock;
-        lock.acquire(my_mutex);
+        //tbb::queuing_mutex::scoped_lock lock;
+        //lock.acquire(my_mutex);
         context->set_finished();
-        lock.release();
+        //lock.release();
     };
     const std::vector<std::string> get_inputs() const {return std::vector<std::string>();};
     const std::vector<std::string> get_outputs() const {return std::vector<std::string>();};

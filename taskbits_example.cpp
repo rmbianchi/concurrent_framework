@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     int num_threads = 4;
     // create a pool of toy algorithms
     printf("Creating the pool of algos:\n");
-    std::vector<AlgoBase*> chain = exampleChain1();
+    std::vector<AlgoBase*> chain = exampleChain3();
     
     // command-line parser
     if ( argc > 1 ) num_threads = atoi(argv[1]);
@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
     
     // declaring a Whiteboard instance with a number of internal slots
     Whiteboard wb("Central Whiteboard", 20);
-    unsigned int events(40);
-    unsigned int n_parallel(2);
+    unsigned int events(400);
+    unsigned int n_parallel(8);
     
     bool test = false;
     if ( argc > 3 && atoi(argv[3]) == 1 ) test = true;

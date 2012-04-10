@@ -86,6 +86,7 @@ public:
     const bool finished() const {if (m_current_context==NULL) return false ; return m_current_context->is_finished();};
     const bool is_available() const {return m_available;};
     void reset(){m_available = true; m_current_context = NULL;};
+    Context*& get_context(){return m_current_context;};
     
 private:
     std::vector<AlgoBase*> m_algorithms;
