@@ -23,6 +23,7 @@
 #include "Algo.h"
 #include "Context.h"
 
+//typedef uint64_t state_type;
 typedef std::bitset<1000> state_type;
 
 /**

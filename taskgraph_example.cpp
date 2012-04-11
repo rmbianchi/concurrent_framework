@@ -14,6 +14,7 @@
 // include fwk
 #include "Algo.h"
 #include "ExampleChains.h"
+#include "LHCbGraph.h"
 #include "Helpers.h"
 #include "Whiteboard.h"
 #include "TaskSchedule.h"
@@ -31,7 +32,7 @@ int schedule(Whiteboard * wb, std::vector<AlgoBase*> chain, unsigned int events,
     
     // set up the scheduler
     TaskScheduler scheduler(chain, wb, 8);
-    scheduler.run_parallel(400);
+    scheduler.run_parallel(events);
 
     tbb::spin_mutex::scoped_lock lock;
     
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
     int num_threads = 4;
     // create a pool of toy algorithms
     printf("Creating the pool of algos:\n");
-    std::vector<AlgoBase*> chain = exampleChain3();
+    std::vector<AlgoBase*> chain = lhcbChain();
     
     // command-line parser
     if ( argc > 1 ) num_threads = atoi(argv[1]);
@@ -70,8 +71,8 @@ int main(int argc, char *argv[]) {
 
     // declaring a Whiteboard instance with a number of internal slots
     Whiteboard wb("Central Whiteboard", 20);
-    unsigned int events(400);
-    unsigned int n_parallel(8);
+    unsigned int events(4000);
+    unsigned int n_parallel(40);
     
     bool test = false;
     if ( argc > 3 && atoi(argv[3]) == 1 ) test = true;

@@ -41,12 +41,12 @@ std::vector<state_type> Scheduler::compute_dependencies() {
     // use the mapping to create a bit pattern of input requirements
     state_type termination_requirement(0);
     for (unsigned int i = 0, n_algos = algos_.size(); i < n_algos; ++i) {
-        unsigned int requirements = 0;
+        state_type requirements(0);
         printf(" %i: %s\n",i,algos_[i]->get_name());
         const std::vector<std::string>& inputs = algos_[i]->get_inputs();
         for (unsigned int j = 0, n_inputs = inputs.size(); j < n_inputs; ++j){
             unsigned int input_index = product_indices[inputs[j]];
-            requirements = requirements | (1 << input_index);
+            requirements[input_index] = true;
             printf("\tconnecting to %s (via '%s')\n", algos_[input_index]->get_name(), inputs[j].c_str());
         }
         all_requirements[i] = requirements;

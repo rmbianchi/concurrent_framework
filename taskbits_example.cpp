@@ -14,6 +14,7 @@
 // include fwk
 #include "Algo.h"
 #include "ExampleChains.h"
+#include "LHCbGraph.h"
 #include "Helpers.h"
 #include "Whiteboard.h"
 #include "Scheduler.h"
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
     int num_threads = 4;
     // create a pool of toy algorithms
     printf("Creating the pool of algos:\n");
-    std::vector<AlgoBase*> chain = exampleChain3();
+    std::vector<AlgoBase*> chain = lhcbChain();
     
     // command-line parser
     if ( argc > 1 ) num_threads = atoi(argv[1]);
