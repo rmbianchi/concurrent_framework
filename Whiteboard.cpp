@@ -84,7 +84,7 @@ void Whiteboard::release_context(Context*& context){
     // TODO: for now slot and context number are identical
     // will change in the future
     const unsigned int& i = context->get_slotnumber();
-    print_slot_content(i);
+    //print_slot_content(i);
     context->reset();
     slots_[i]->clear();
     contexts_[i].second = available; 

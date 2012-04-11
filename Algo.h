@@ -45,11 +45,11 @@ public:
     void body(Context *context) {
         unsigned int event(0);
         context->read(event, "event");
-        printf("Algo '%s' - begin - EVENT: %i\n", name_, event);
+        //printf("Algo '%s' - begin - EVENT: %i\n", name_, event);
         sleep(time_);
         read(context);
         publish(context);
-        printf("Algo '%s' - end - EVENT: %i\n", name_, event);
+        //printf("Algo '%s' - end - EVENT: %i\n", name_, event);
     };
     const std::vector<std::string> get_inputs() const {return inputs_;};
     const std::vector<std::string> get_outputs() const {return outputs_;};

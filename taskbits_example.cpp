@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     
     // declaring a Whiteboard instance with a number of internal slots
     Whiteboard wb("Central Whiteboard", 40);
-    unsigned int events(40000);
+    unsigned int events(4000);
     unsigned int n_parallel(40);
     
     bool test = false;

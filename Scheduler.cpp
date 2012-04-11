@@ -27,8 +27,8 @@ Scheduler::Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, u
 }  
 
 
-std::vector<unsigned int> Scheduler::compute_dependencies() {
-    std::vector<unsigned int> all_requirements(algos_.size());
+std::vector<state_type> Scheduler::compute_dependencies() {
+    std::vector<state_type> all_requirements(algos_.size());
     // create the mapping productname : index
     std::map<std::string,unsigned int> product_indices;
     for (unsigned int i = 0, n_algos = algos_.size(); i < n_algos; ++i) {
@@ -39,7 +39,7 @@ std::vector<unsigned int> Scheduler::compute_dependencies() {
         }
     }
     // use the mapping to create a bit pattern of input requirements
-    unsigned int termination_requirement = 0;
+    state_type termination_requirement(0);
     for (unsigned int i = 0, n_algos = algos_.size(); i < n_algos; ++i) {
         unsigned int requirements = 0;
         printf(" %i: %s\n",i,algos_[i]->get_name());
@@ -50,7 +50,7 @@ std::vector<unsigned int> Scheduler::compute_dependencies() {
             printf("\tconnecting to %s (via '%s')\n", algos_[input_index]->get_name(), inputs[j].c_str());
         }
         all_requirements[i] = requirements;
-        termination_requirement = termination_requirement | (1 << i);
+        termination_requirement[i] = true;
     }
     termination_requirement_ = termination_requirement;
     return all_requirements;  
@@ -62,7 +62,7 @@ void Scheduler::run_parallel(int n){
     printf(" Using scheduler flavour #2\n");
     printf("++++++++++++++++++++++++++++\n");
     //get the bit patterns and sort by node id (like the available algos)
-    std::vector<unsigned int> bits = compute_dependencies();   
+    std::vector<state_type> bits = compute_dependencies();   
     // some book keeping vectors
     size_t size = algos_.size();
     std::vector<EventState*> event_states(0);
@@ -76,10 +76,8 @@ void Scheduler::run_parallel(int n){
             if (whiteboard_available){
                 EventState* event_state = new EventState(size);
                 event_states.push_back(event_state);
-                event_state->started_algos=std::vector<bool>(size, false);
-                event_state->state = 0;
                 event_state->context = context;
-                event_state->context->write(processed+in_flight, "event","event");
+                context->write(processed+in_flight, "event","event");
                 ++current_event;
                 ++in_flight;  
             } else {
@@ -93,9 +91,9 @@ void Scheduler::run_parallel(int n){
             for (unsigned int event_id = 0; event_id < event_states.size() ; ++event_id) {
                 EventState*& event_state = event_states[event_id];
                 // extract event_id specific quantities
-                unsigned int& current_event_bits = event_state->state;
+                state_type& current_event_bits = event_state->state;
                 // check whether all dependencies for the algorithm are fulfilled...
-                unsigned int tmp = (current_event_bits & bits[algo]) ^ bits[algo];
+                state_type tmp = (current_event_bits & bits[algo]) ^ bits[algo];
                 // ... and whether the algo was previously started
                 std::vector<bool>& algo_has_run = event_state->started_algos;
                 if ((tmp==0) && (algo_has_run[algo] == false)) {
@@ -120,13 +118,12 @@ void Scheduler::run_parallel(int n){
         for (std::vector<EventState*>::iterator i = event_states.begin(), end = event_states.end(); i != end; ++i){
             if ((*i)->state == termination_requirement_) {
                 Context*& context = (*i)->context;
-                printf("Finished event\n"); 
+                //printf("Finished event\n"); 
                 wb_.release_context(context);
                 ++processed; 
                 --in_flight;
                 delete (*i);
                 i = event_states.erase(i);
-                break;
             }
         }
     } while (processed < n);
@@ -143,8 +140,8 @@ void Scheduler::task_cleanup(std::vector<EventState*>& event_states){
         queue_full = done_queue_.try_pop(result);
         if (queue_full) {
             available_algo_instances_[result->algo_id_]->push(result->algo_);
-            unsigned int old_bits(result->event_state_->state); 
-            unsigned int new_bits = old_bits | (1 << result->algo_id_);
+            state_type new_bits(result->event_state_->state); 
+            new_bits[result->algo_id_] = true;
             result->event_state_->state = new_bits;
             delete result;
         }
