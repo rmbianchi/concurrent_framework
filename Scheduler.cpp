@@ -61,12 +61,11 @@ void Scheduler::run_parallel(int n){
     printf("++++++++++++++++++++++++++++\n");
     printf(" Using scheduler flavour #2\n");
     printf("++++++++++++++++++++++++++++\n");
-    //std::vector<std::pair<unsigned int, Context*> > event_states(max_concurrent_events_);
     //get the bit patterns and sort by node id (like the available algos)
     std::vector<unsigned int> bits = compute_dependencies();   
     // some book keeping vectors
     size_t size = algos_.size();
-    std::vector<EventState*> event_states(0);//max_concurrent_events_, EventState(size));
+    std::vector<EventState*> event_states(0);
     unsigned int in_flight(0), processed(0), current_event(0);  
     
     do {        
