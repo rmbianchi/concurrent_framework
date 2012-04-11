@@ -13,7 +13,6 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <deque>
 // include tbb
 #include "tbb/concurrent_queue.h"
 #include "tbb/concurrent_vector.h"
@@ -54,6 +53,7 @@ public:
 class EventState{
 public:
     EventState(unsigned int algos) : state(0), context(0), started_algos(algos,false){};
+    ~EventState(){};
     unsigned int state;
     Context* context;
     std::vector<bool> started_algos;
@@ -63,10 +63,11 @@ class Scheduler {
 public:
     Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, unsigned int max_concurrent_events);
     void run_parallel(int n);
-    void task_cleanup(std::deque<EventState*>& event_states);
+    void task_cleanup(std::vector<EventState*>& event_states);
 private:
     std::vector<unsigned int> compute_dependencies();
     std::vector<AlgoBase*> algos_;
+    unsigned int termination_requirement_;
     Whiteboard& wb_;
     unsigned int max_concurrent_events_;
     std::vector<tbb::concurrent_queue<AlgoBase*>*> available_algo_instances_;

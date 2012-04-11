@@ -40,7 +40,7 @@ namespace tbb{
                     virtual ~successor_cache() {}
                     
                     void register_successor( receiver<T> &r ) {
-                        typename my_mutex_type::scoped_lock l(my_mutex, true);
+                        my_mutex_type::scoped_lock l(my_mutex, true);
                         my_successors.push_back( &r ); 
                         if ( my_owner ) {
                             receiver<T> *cr = dynamic_cast< receiver<T> * >(&r);
@@ -51,8 +51,8 @@ namespace tbb{
                     }
                     
                     void remove_successor( receiver<T> &r ) {
-                        typename my_mutex_type::scoped_lock l(my_mutex, true);
-                        for ( typename my_successors_type::iterator i = my_successors.begin();
+                        my_mutex_type::scoped_lock l(my_mutex, true);
+                        for ( my_successors_type::iterator i = my_successors.begin();
                              i != my_successors.end(); ++i ) { 
                             if ( *i == & r ) {
                                 if ( my_owner )
@@ -64,7 +64,7 @@ namespace tbb{
                     }
                     
                     bool empty() { 
-                        typename my_mutex_type::scoped_lock l(my_mutex, false);
+                        my_mutex_type::scoped_lock l(my_mutex, false);
                         return my_successors.empty(); 
                     }
                     

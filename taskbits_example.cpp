@@ -70,9 +70,9 @@ int main(int argc, char *argv[]) {
 
     
     // declaring a Whiteboard instance with a number of internal slots
-    Whiteboard wb("Central Whiteboard", 20);
-    unsigned int events(4000);
-    unsigned int n_parallel(20);
+    Whiteboard wb("Central Whiteboard", 40);
+    unsigned int events(40000);
+    unsigned int n_parallel(40);
     
     bool test = false;
     if ( argc > 3 && atoi(argv[3]) == 1 ) test = true;

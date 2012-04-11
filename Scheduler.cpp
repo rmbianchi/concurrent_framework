@@ -16,19 +16,13 @@ tbb::task* AlgoTask::execute(){
     return NULL;
 }
 
-
 Scheduler::Scheduler(const std::vector<AlgoBase*>& algorithms, Whiteboard& wb, unsigned int max_concurrent_events) : algos_(algorithms), wb_(wb), max_concurrent_events_(max_concurrent_events) {
-    // put in a termination algo
-    algos_.push_back(new EndAlgo("*END*"));
     // Fill the data structure holding all available algorithm instances
     const unsigned int size = algos_.size();
     available_algo_instances_.resize(size);
     for (unsigned int i = 0; i<size; ++i) {
         available_algo_instances_[i] = new tbb::concurrent_queue<AlgoBase*>();   
         available_algo_instances_[i]->push(algos_[i]);
-    }
-    for (unsigned int i = 0; i < max_concurrent_events_; ++i){
-        available_algo_instances_[size-1]->push(algos_[size-1]);
     }
 }  
 
@@ -58,7 +52,7 @@ std::vector<unsigned int> Scheduler::compute_dependencies() {
         all_requirements[i] = requirements;
         termination_requirement = termination_requirement | (1 << i);
     }
-    all_requirements[(algos_.size()-1)] = termination_requirement >> 1; // the endalgo has to wait for everything else, except for itself
+    termination_requirement_ = termination_requirement;
     return all_requirements;  
 }
 
@@ -72,7 +66,7 @@ void Scheduler::run_parallel(int n){
     std::vector<unsigned int> bits = compute_dependencies();   
     // some book keeping vectors
     size_t size = algos_.size();
-    std::deque<EventState*> event_states(0);//max_concurrent_events_, EventState(size));
+    std::vector<EventState*> event_states(0);//max_concurrent_events_, EventState(size));
     unsigned int in_flight(0), processed(0), current_event(0);  
     
     do {        
@@ -81,7 +75,6 @@ void Scheduler::run_parallel(int n){
             Context* context(0);
             bool whiteboard_available = wb_.get_context(context);
             if (whiteboard_available){
-                // go on
                 EventState* event_state = new EventState(size);
                 event_states.push_back(event_state);
                 event_state->started_algos=std::vector<bool>(size, false);
@@ -125,26 +118,26 @@ void Scheduler::run_parallel(int n){
         task_cleanup(event_states);
         
         // check for finished events and clean up
-        for (std::deque<EventState*>::iterator i = event_states.begin(), end = event_states.end(); i != end; ++i){
-            Context*& context = (*i)->context;
-            if (context->is_finished()) {
+        for (std::vector<EventState*>::iterator i = event_states.begin(), end = event_states.end(); i != end; ++i){
+            if ((*i)->state == termination_requirement_) {
+                Context*& context = (*i)->context;
                 printf("Finished event\n"); 
+                wb_.release_context(context);
                 ++processed; 
                 --in_flight;
-                wb_.release_context(context);
-                //delete (*i);
+                delete (*i);
                 i = event_states.erase(i);
-            } 
-        }     
+                break;
+            }
+        }
     } while (processed < n);
-    
 }
 
 
 // check for finished tasks, free the used algo instances and delete the AlgoTaskId
 // TODO: Much of it could be moved into the call back procedure of AlgoTask
 //       once we made all the state objects thread safe
-void Scheduler::task_cleanup(std::deque<EventState*>& event_states){    
+void Scheduler::task_cleanup(std::vector<EventState*>& event_states){    
     AlgoTaskId* result(0);
     bool queue_full(false);
     do {
