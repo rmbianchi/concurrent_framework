@@ -10,7 +10,7 @@
 #include "Whiteboard.h"
 
 
-Whiteboard::Whiteboard(const char* name, const int i) : name_(name), number_of_slots_(i) {
+Whiteboard::Whiteboard(const char* name, const int i) : name_(name), number_of_slots_(i), data_id_counter_(0) {
     printf("Init whiteboard with %i slots.\n",i);
     for (int i=0; i< number_of_slots_; ++i){
         contexts_.push_back(registry_type(new Context(i,*this), ContextStatus()));
@@ -67,7 +67,6 @@ bool Whiteboard::read(DataItem& item, const std::string& label, const unsigned i
   return successful; 
 }
 
-//TODO: safe guard it against exceeded range!
 bool Whiteboard::get_context(Context*& context){
     // which context is free?
     for (unsigned int i=0, max=contexts_.size(); i<max; ++i) {
@@ -84,9 +83,19 @@ void Whiteboard::release_context(Context*& context){
     // TODO: for now slot and context number are identical
     // will change in the future
     const unsigned int& i = context->get_slotnumber();
-    //print_slot_content(i);
     context->reset();
     slots_[i]->clear();
     contexts_[i].second = available; 
 
+}
+
+unsigned int Whiteboard::register_dependency(const std::string& label){
+    std::map<std::string, unsigned int>::iterator i(data_id_map_.find(label));
+    if (i != data_id_map_.end()) {
+        return i->second;         
+    } else {
+        unsigned int counter = data_id_counter_++;
+        data_id_map_[name_] = data_id_counter_;
+        return counter; 
+    }
 }

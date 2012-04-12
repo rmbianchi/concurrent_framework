@@ -17,6 +17,9 @@
 
 #include "tbb/queuing_mutex.h"
 
+
+enum AlgoStatus {not_run, successful, accept, reject};
+
 /**
  * Algorithm virtual base class
  */
@@ -82,36 +85,11 @@ class NonReentrantToyAlgo : public ToyAlgo{
 public:
     NonReentrantToyAlgo(const char* name, int value, unsigned int time) : ToyAlgo(name, value, time), counter_(0){};  
     void body(Context* context) {
-        tbb::queuing_mutex::scoped_lock lock;
-        lock.acquire(mutex_);
         ++counter_;ToyAlgo::body(context); printf("Algo '%s' unsafe counter: %i\n", name_, counter_);
-        lock.release();
     };
 private:
     int counter_;
-    tbb::queuing_mutex mutex_;
     
-};
-
-class EndAlgo : public AlgoBase{
-public:
-    EndAlgo(const char* name) : m_name(name) {};  
-    void body(Context* context) {
-        //tbb::queuing_mutex::scoped_lock lock;
-        //lock.acquire(my_mutex);
-        context->set_finished();
-        //lock.release();
-    };
-    const std::vector<std::string> get_inputs() const {return std::vector<std::string>();};
-    const std::vector<std::string> get_outputs() const {return std::vector<std::string>();};
-    const char* get_name() const {return m_name;};
-    void produces(const std::string&){};
-    void reads(const std::string&){};
-
-    
-private:
-    const char* m_name;
-    tbb::queuing_mutex my_mutex;
 };
 
 #endif /* ALGO_H_ */

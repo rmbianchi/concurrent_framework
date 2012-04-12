@@ -13,11 +13,11 @@
 #include "tbb/task_scheduler_init.h"
 // include fwk
 #include "Algo.h"
+#include "EventLoopManager.h"
 #include "ExampleChains.h"
 #include "LHCbGraph.h"
 #include "Helpers.h"
 #include "Whiteboard.h"
-#include "Scheduler.h"
 
 
 tbb::spin_mutex my_mutex;
@@ -31,8 +31,8 @@ int schedule(Whiteboard& wb, std::vector<AlgoBase*>& chain, unsigned int events,
     timestamp_t tstart = get_timestamp();
     
     // set up the scheduler
-    Scheduler scheduler(chain, wb, n_parallel);
-    scheduler.run_parallel(events);
+    EventLoopManager manager(chain, wb, n_parallel);
+    manager.run(events);
 
     tbb::spin_mutex::scoped_lock lock;
     
@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
 
     
     // declaring a Whiteboard instance with a number of internal slots
-    Whiteboard wb("Central Whiteboard", 40);
-    unsigned int events(4000);
-    unsigned int n_parallel(40);
+    Whiteboard wb("Central Whiteboard", 200);
+    unsigned int events(40);
+    unsigned int n_parallel(20);
     
     bool test = false;
     if ( argc > 3 && atoi(argv[3]) == 1 ) test = true;

@@ -16,6 +16,7 @@
 // include c++
 #include <list>
 #include <vector>
+#include <map>
 // include fwk
 #include "ConcurrentTypes.h"
 #include "Context.h"
@@ -45,14 +46,18 @@ public:
     void print_slot_content(const unsigned  int slot_number) const; 
     bool get_context(Context*&);
     void release_context(Context*& context);
+    unsigned int register_dependency(const std::string& label);
 
 private:
     const char* name_;
     const int number_of_slots_;
+    unsigned int data_id_counter_;
     tbb::spin_mutex my_mutex;
     std::vector<StringDataMap*> slots_;
     typedef std::pair<Context*,ContextStatus> registry_type;
     std::vector<registry_type> contexts_; 
+    std::map<std::string,unsigned int> data_id_map_;
+
 };
 
 #endif /* WHITEBOARD_H_ */
