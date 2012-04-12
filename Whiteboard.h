@@ -46,7 +46,7 @@ public:
     void print_slot_content(const unsigned  int slot_number) const; 
     bool get_context(Context*&);
     void release_context(Context*& context);
-    unsigned int register_dependency(const std::string& label);
+    unsigned int register_dependency(const std::string& label); // registers a dependency and returns the index in the later used bit mask
 
 private:
     const char* name_;
