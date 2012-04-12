@@ -61,8 +61,8 @@ public:
     ~EventState(){};
     state_type state;
     Context* context;
-    std::vector<bool> algos_started_;
-    std::vector<bool> algos_passed_;
+    tbb::concurrent_vector<bool> algos_started_;
+    tbb::concurrent_vector<bool> algos_passed_;
 };
 
 class Scheduler {
@@ -71,13 +71,13 @@ public:
     void run_parallel(int n);
     void task_cleanup();
     void algo_is_done(AlgoTaskId* task_id);
+    void start_event(unsigned int event);
 private:
     std::vector<state_type> compute_dependencies();
     const std::vector<AlgoBase*>& algos_;
     state_type termination_requirement_;
     Whiteboard& wb_;
-    unsigned int max_concurrent_events_;
-    std::vector<tbb::concurrent_queue<AlgoBase*>*> available_algo_instances_;
+    unsigned int max_concurrent_events_; //to be removed
     tbb::concurrent_queue<AlgoTaskId*> done_queue_;
     AlgoPool& algo_pool_; 
     tbb::queuing_mutex task_callback_mutex_;

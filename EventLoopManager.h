@@ -19,13 +19,13 @@ class EventLoopManager{
 public:
     EventLoopManager(const std::vector<AlgoBase*>& algos, Whiteboard& wb, const unsigned int n_parallel);
     void run(int events);
+    void event_done(int event_id);
     
 private:
     AlgoPool algo_pool_;
     Scheduler scheduler_;
     unsigned int in_flight_;
     unsigned int processed_; 
-    unsigned int current_event_; 
 };
 
 

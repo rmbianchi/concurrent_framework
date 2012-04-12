@@ -9,8 +9,9 @@
 #include "Scheduler.h"
 
 tbb::task* AlgoTask::execute(){
-    task_->algo_->body(task_->event_state_->context);
+    bool result = task_->algo_->body(task_->event_state_->context);
     scheduler_->algo_is_done(task_);
+    task_->event_state_->algos_passed_[task_->algo_id_] = result;
     return NULL;
 }
 
@@ -57,7 +58,7 @@ void Scheduler::run_parallel(int n){
     // some book keeping vectors
     size_t size = algos_.size();
     std::vector<EventState*> event_states(0);
-    unsigned int in_flight(0), processed(0), current_event(0);  
+    unsigned int in_flight(0), processed(0);  
     
     do {        
         // check if a new event can and should be started
@@ -69,7 +70,6 @@ void Scheduler::run_parallel(int n){
                 event_states.push_back(event_state);
                 event_state->context = context;
                 context->write(processed+in_flight, "event","event");
-                ++current_event;
                 ++in_flight;  
             } else {
                 printf("no whiteboard available\n");
@@ -85,8 +85,10 @@ void Scheduler::run_parallel(int n){
                 state_type& current_event_bits = event_state->state;
                 // check whether all dependencies for the algorithm are fulfilled...
                 state_type tmp = (current_event_bits & bits[algo]) ^ bits[algo];
+                /// ...whether all required products are there...
+                
                 // ... and whether the algo was previously started
-                std::vector<bool>& algo_has_run = event_state->algos_started_;
+                tbb::concurrent_vector<bool>& algo_has_run = event_state->algos_started_;
                 if ((tmp==0) && (algo_has_run[algo] == false)) {
                     // is there an available Algo instance one can use?
                     AlgoBase* algo_instance(0);
@@ -147,5 +149,18 @@ void Scheduler::algo_is_done(AlgoTaskId* result){
     //delete result;
     
     done_queue_.push(result);
+}
+
+void Scheduler::start_event(unsigned int event_number){
+//    Context* context(0);
+//    bool whiteboard_available = wb_.get_context(context);
+//    if (whiteboard_available){
+//        EventState* event_state = new EventState(size);
+//        event_states.push_back(event_state);
+//        event_state->context = context;
+//        context->write(event_number, "event","event"); 
+//    } else {
+//        printf("no whiteboard available\n");
+//    }
 }
 

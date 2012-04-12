@@ -26,7 +26,7 @@ enum AlgoStatus {not_run, successful, accept, reject};
 class AlgoBase {
 public:
     virtual ~AlgoBase(){};
-    virtual void body(Context* context) = 0;
+    virtual bool body(Context* context) = 0;
     virtual const std::vector<std::string> get_inputs() const = 0;
     virtual const std::vector<std::string> get_outputs() const = 0;
     virtual const char* get_name() const = 0;
@@ -45,7 +45,7 @@ public:
     virtual ~ToyAlgo() {};
 
     // actual implementations of the virtual methods
-    void body(Context *context) {
+    bool body(Context *context) {
         unsigned int event(0);
         context->read(event, "event");
         //printf("Algo '%s' - begin - EVENT: %i\n", name_, event);
@@ -53,6 +53,7 @@ public:
         read(context);
         publish(context);
         //printf("Algo '%s' - end - EVENT: %i\n", name_, event);
+        return true;
     };
     const std::vector<std::string> get_inputs() const {return inputs_;};
     const std::vector<std::string> get_outputs() const {return outputs_;};
@@ -84,8 +85,11 @@ protected:
 class NonReentrantToyAlgo : public ToyAlgo{
 public:
     NonReentrantToyAlgo(const char* name, int value, unsigned int time) : ToyAlgo(name, value, time), counter_(0){};  
-    void body(Context* context) {
-        ++counter_;ToyAlgo::body(context); printf("Algo '%s' unsafe counter: %i\n", name_, counter_);
+    bool body(Context* context) {
+        ++counter_;
+        ToyAlgo::body(context); 
+        printf("Algo '%s' unsafe counter: %i\n", name_, counter_);
+        return true;
     };
 private:
     int counter_;
