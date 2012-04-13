@@ -32,7 +32,7 @@ int schedule(Whiteboard& wb, std::vector<AlgoBase*>& chain, unsigned int events,
     
     // set up the scheduler
     EventLoopManager manager(chain, wb, n_parallel);
-    manager.run(events);
+    manager.start(events);
 
     tbb::spin_mutex::scoped_lock lock;
     
@@ -58,7 +58,6 @@ int main(int argc, char *argv[]) {
     // default threads
     int num_threads = 4;
     // create a pool of toy algorithms
-    printf("Creating the pool of algos:\n");
     std::vector<AlgoBase*> chain = lhcbChain();
     
     // command-line parser
@@ -72,7 +71,7 @@ int main(int argc, char *argv[]) {
     
     // declaring a Whiteboard instance with a number of internal slots
     Whiteboard wb("Central Whiteboard", 200);
-    unsigned int events(40);
+    unsigned int events(400);
     unsigned int n_parallel(20);
     
     bool test = false;

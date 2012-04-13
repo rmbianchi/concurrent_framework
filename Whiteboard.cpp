@@ -35,11 +35,6 @@ void Whiteboard::write ( const DataItem &item, const std::string &key, const uns
     slot->insert( a, key );
     a->second = item;
 
-    //tbb::spin_mutex::scoped_lock lock;
-    ////lock.acquire(my_mutex);
-    //printf("\nWhiteboard - published product: '%s'\n", key_name );
-    //lock.release();
-
 }
 
 // TODO: this operation is *not* thread safe

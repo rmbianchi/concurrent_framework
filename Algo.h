@@ -18,7 +18,7 @@
 #include "tbb/queuing_mutex.h"
 
 
-enum AlgoStatus {not_run, successful, accept, reject};
+enum AlgoState {NOT_RUN, SCHEDULED, ACCEPT, REJECT};
 
 /**
  * Algorithm virtual base class
@@ -40,8 +40,7 @@ public:
 class ToyAlgo : public AlgoBase {
 public:
 
-    ToyAlgo(const char* name, int value, unsigned int time) : name_(name), inputs_(), outputs_(), time_(time), data_(value) 
-    {printf("Instantiating %s\n", name_);};
+    ToyAlgo(const char* name, int value, unsigned int time) : name_(name), inputs_(), outputs_(), time_(time), data_(value){};
     virtual ~ToyAlgo() {};
 
     // actual implementations of the virtual methods
