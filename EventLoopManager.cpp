@@ -41,6 +41,7 @@ void EventLoopManager::run(){
         }
         std::this_thread::yield();
     } while (processed_ < events_);
+    sleep(1);
     scheduler_.stop();
     printf("EventLoopManager::run finished\n");
 
