@@ -32,7 +32,8 @@ void EventLoopManager::finished_event(){
 void EventLoopManager::run(){
     printf("EventLoopManager::run\n");
     tbb::task* s_task = new( tbb::task::allocate_root() ) SchedulerTask(&scheduler_);
-    tbb::task::enqueue( *s_task); 
+    //tbb::task::enqueue( *s_task); 
+    tbb::task::spawn(*s_task);
     do {
         if (in_flight_ < max_concurrent_events_ && processed_+in_flight_ < events_) {
             scheduler_.start_event(processed_+in_flight_);
@@ -41,7 +42,6 @@ void EventLoopManager::run(){
         std::this_thread::yield();
     } while (processed_ < events_);
     scheduler_.stop();
-    sleep(1); // TODO: fix this with proper task dependencies
     printf("EventLoopManager::run finished\n");
 
 }

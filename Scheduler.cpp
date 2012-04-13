@@ -106,14 +106,16 @@ void Scheduler::run(){
         do {
             unsigned int event_number(0);
             queue_full = new_events_queue_.try_pop(event_number);
-            Context* context(0);
-            bool whiteboard_available = wb_.get_context(context);
-            if (whiteboard_available){
-                EventState* event_state = new EventState(size);
-                event_states.push_back(event_state);
-                event_state->context = context;
-                context->write(event_number, "event","event");
-            } 
+            if (queue_full){
+                Context* context(0);
+                bool whiteboard_available = wb_.get_context(context);
+                if (whiteboard_available){
+                    EventState* event_state = new EventState(size);
+                    event_states.push_back(event_state);
+                    event_state->context = context;
+                    context->write(event_number, "event","event");
+                } 
+            }
         } while(queue_full);
 
         
