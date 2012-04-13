@@ -34,11 +34,9 @@ enum ContextStatus {available, in_use, in_cleanup};
 
 class Whiteboard {
 public:
-    // methods
     Whiteboard( const char* name, const int number_of_slots);
     virtual ~Whiteboard();
     const char* get_name() {return name_;};
-    // I/O methods
     // TODO: do a proper handling of object ownership 
     bool read(DataItem&, const std::string& label, const unsigned int slot_number) const;
     void write(const DataItem& item, const::std::string& label, const unsigned int slot_number); 

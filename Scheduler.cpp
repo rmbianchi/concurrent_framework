@@ -16,8 +16,8 @@
 tbb::task* AlgoTask::execute(){
     bool successful = task_->algo_->body(task_->event_state_->context);
     scheduler_->algo_is_done(task_);
-    if (successful) task_->event_state_->algo_states[task_->algo_id_] = ACCEPT;
-    else task_->event_state_->algo_states[task_->algo_id_] = REJECT;
+    //if (successful) task_->event_state_->algo_states[task_->algo_id_] = ACCEPT;
+    //else task_->event_state_->algo_states[task_->algo_id_] = REJECT;
     return NULL;
 }
 
@@ -68,6 +68,7 @@ void Scheduler::task_cleanup(){
             state_type new_bits(result->event_state_->state); 
             new_bits[result->algo_id_] = true;
             result->event_state_->state = new_bits;
+            result->event_state_->algo_states[result->algo_id_] = ACCEPT;
             delete result;
         }
     } while (queue_full);  
@@ -93,7 +94,6 @@ void Scheduler::start_event(unsigned int event_number){
 void Scheduler::initialise(){}
 
 void Scheduler::run(){
-    printf("Scheduler::run   \n");
     //get the bit patterns and sort by node id (like the available algos)
     std::vector<state_type> bits = compute_dependencies();   
     // some book keeping vectors
@@ -130,7 +130,7 @@ void Scheduler::run(){
                 /// ...whether all required products are there...
                 
                 // ... and whether the algo was previously started
-                tbb::concurrent_vector<AlgoState>& algo_states = event_state->algo_states;
+                std::vector<AlgoState>& algo_states = event_state->algo_states;
                 if ((tmp==0) && (algo_states[algo] == NOT_RUN)) {
                     // is there an available Algo instance one can use?
                     AlgoBase* algo_instance(0);
@@ -152,7 +152,6 @@ void Scheduler::run(){
         for (std::vector<EventState*>::iterator i = event_states.begin(), end = event_states.end(); i != end; ++i){
             if ((*i)->state == termination_requirement_) {
                 Context*& context = (*i)->context;
-                //printf("Finished event\n"); 
                 wb_.release_context(context);
                 event_loop_manager_->finished_event();
                 delete (*i);
@@ -165,7 +164,6 @@ void Scheduler::run(){
         
         
     } while (not has_to_stop_);
-    printf("Scheduler::run finished\n");
     return;
 };
 

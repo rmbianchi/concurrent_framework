@@ -62,7 +62,7 @@ public:
     ~EventState(){};
     state_type state;
     Context* context;
-    tbb::concurrent_vector<AlgoState> algo_states;
+    std::vector<AlgoState> algo_states;
 };
 
 class Scheduler {

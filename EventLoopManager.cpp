@@ -30,7 +30,6 @@ void EventLoopManager::finished_event(){
 }
 
 void EventLoopManager::run(){
-    printf("EventLoopManager::run\n");
     tbb::task* s_task = new( tbb::task::allocate_root() ) SchedulerTask(&scheduler_);
     //tbb::task::enqueue( *s_task); 
     tbb::task::spawn(*s_task);
@@ -43,6 +42,4 @@ void EventLoopManager::run(){
     } while (processed_ < events_);
     sleep(1);
     scheduler_.stop();
-    printf("EventLoopManager::run finished\n");
-
 }
