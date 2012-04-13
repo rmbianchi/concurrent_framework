@@ -11,8 +11,8 @@
 
 EventLoopManager::EventLoopManager(const std::vector<AlgoBase*>& algos, Whiteboard& wb, const unsigned int n_parallel) : 
 algo_pool_(algos,std::vector<int>(algos.size(),1)),
-scheduler_(wb, n_parallel, algo_pool_,algos),
-in_flight_(0), processed_(0)
+scheduler_(wb, n_parallel, algo_pool_,algos, this),
+in_flight_(), processed_()
 
 {
 
@@ -28,8 +28,9 @@ void EventLoopManager::run(int events){
 //        }
 ///       std::this_thread::yield();
 //    } while (processed_ < events);
-    
 }
 
-void EventLoopManager::event_done(int event_id){
+void EventLoopManager::event_done(){
+    ++processed_;
+    --in_flight_;
 }

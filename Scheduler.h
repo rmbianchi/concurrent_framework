@@ -27,6 +27,7 @@
 typedef std::bitset<1000> state_type;
 
 class Scheduler;
+class EventLoopManager;
 
 /**
  * The AlgoTaskId the item used for call back once tbb finished the AlgoTask
@@ -67,7 +68,7 @@ public:
 
 class Scheduler {
 public:
-    Scheduler(Whiteboard& wb, unsigned int max_concurrent_events, AlgoPool& algo_pool, const std::vector<AlgoBase*>& algos);
+    Scheduler(Whiteboard& wb, unsigned int max_concurrent_events, AlgoPool& algo_pool, const std::vector<AlgoBase*>& algos, EventLoopManager* looper);
     void run_parallel(int n);
     void task_cleanup();
     void algo_is_done(AlgoTaskId* task_id);
@@ -81,6 +82,7 @@ private:
     tbb::concurrent_queue<AlgoTaskId*> done_queue_;
     AlgoPool& algo_pool_; 
     tbb::queuing_mutex task_callback_mutex_;
+    EventLoopManager* event_loop_manager_;
 };
 
 

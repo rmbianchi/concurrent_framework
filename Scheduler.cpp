@@ -6,7 +6,9 @@
 //  Copyright (c) 2012 __CERN__. All rights reserved.
 //
 
+#include "EventLoopManager.h"
 #include "Scheduler.h"
+
 
 tbb::task* AlgoTask::execute(){
     bool result = task_->algo_->body(task_->event_state_->context);
@@ -15,7 +17,7 @@ tbb::task* AlgoTask::execute(){
     return NULL;
 }
 
-Scheduler::Scheduler(Whiteboard& wb, unsigned int max_concurrent_events, AlgoPool& algo_pool, const std::vector<AlgoBase*>& algos ) : algos_(algos), wb_(wb), max_concurrent_events_(max_concurrent_events), algo_pool_(algo_pool){
+Scheduler::Scheduler(Whiteboard& wb, unsigned int max_concurrent_events, AlgoPool& algo_pool, const std::vector<AlgoBase*>& algos, EventLoopManager* looper ) : algos_(algos), wb_(wb), max_concurrent_events_(max_concurrent_events), algo_pool_(algo_pool), event_loop_manager_(looper){
  }  
 
 
@@ -112,8 +114,9 @@ void Scheduler::run_parallel(int n){
                 Context*& context = (*i)->context;
                 //printf("Finished event\n"); 
                 wb_.release_context(context);
-                ++processed; 
-                --in_flight;
+                event_loop_manager_->event_done();
+                ++processed;  //to be removed
+                --in_flight;  //to be removed
                 delete (*i);
                 i = event_states.erase(i);
             }
