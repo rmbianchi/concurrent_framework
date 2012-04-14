@@ -9,11 +9,8 @@
 // include c++
 #include <iostream>
 // include tbb
-#include "tbb/flow_graph.h"
 #include "tbb/task_scheduler_init.h"
 // include fwk
-#include "Algo.h"
-#include "EventLoopManager.h"
 #include "ExampleChains.h"
 #include "Helpers.h"
 #include "Skep.h"
