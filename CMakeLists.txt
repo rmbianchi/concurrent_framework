@@ -11,7 +11,7 @@ find_package(TBB REQUIRED)
 #--Examples-------------------------------------------------------------------------
 include_directories(${TBB_INCLUDE_DIR})
 
-add_executable(CF4HepTaskBitsDemonstrator taskbits_example.cpp Whiteboard.cpp Context.cpp Scheduler.cpp AlgoPool.cpp EventLoopManager.cpp)
+add_executable(CF4HepTaskBitsDemonstrator taskbits_example.cpp Whiteboard.cpp Context.cpp Scheduler.cpp AlgoPool.cpp EventLoopManager.cpp Skep.cpp)
 target_link_libraries(CF4HepTaskBitsDemonstrator ${TBB_LIBRARIES})
 
 #---Configuration-------------------------------------------------------------------

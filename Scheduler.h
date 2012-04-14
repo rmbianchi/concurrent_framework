@@ -67,34 +67,32 @@ public:
 
 class Scheduler {
 public:
-    Scheduler(Whiteboard& wb, unsigned int max_concurrent_events, AlgoPool& algo_pool, const std::vector<AlgoBase*>& algos, EventLoopManager* looper);
+    Scheduler(Whiteboard& wb);
     void task_cleanup();
     void algo_is_done(AlgoTaskId* task_id);
     void start_event(unsigned int event);
-    void initialise();
+    void initialise(AlgoPool* algo_pool, const std::vector<AlgoBase*>* algos, EventLoopManager* looper);
     void stop(){has_to_stop_ = true;};
-    void run();
+    void operator() ();
 private:
     std::vector<state_type> compute_dependencies();
-    const std::vector<AlgoBase*>& algos_;
+    const std::vector<AlgoBase*>* algos_;
+    AlgoPool* algo_pool_; 
     state_type termination_requirement_;
     Whiteboard& wb_;
     tbb::concurrent_queue<AlgoTaskId*> done_queue_;
     tbb::concurrent_queue<unsigned int> new_events_queue_;
-    AlgoPool& algo_pool_; 
-    tbb::queuing_mutex task_callback_mutex_;
-    EventLoopManager* event_loop_manager_;
-    bool has_to_stop_; //TODO: thread safety
+    EventLoopManager* loop_manager_;
+    tbb::atomic<bool> has_to_stop_;
 };
 
 class SchedulerTask : public tbb::task {
-public:    
-    SchedulerTask(Scheduler* scheduler): scheduler_(scheduler){};    
-    tbb::task* execute(){scheduler_->run();return NULL;};
-private:    
-    Scheduler* scheduler_;
-
-};
-
+    public:    
+        SchedulerTask(Scheduler* scheduler): scheduler_(scheduler){};    
+        tbb::task* execute(){(*scheduler_)();return NULL;};
+    private:    
+        Scheduler* scheduler_;
+    
+    };
 
 #endif

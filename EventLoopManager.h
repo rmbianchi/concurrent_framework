@@ -19,28 +19,27 @@
 class EventLoopManager{
     
 public:
-    EventLoopManager(const std::vector<AlgoBase*>& algos, Whiteboard& wb, const unsigned int n_parallel);
-    void start(int events);
-    void run();
+    EventLoopManager(){};
+    EventLoopManager(const unsigned int n_parallel);
+    void initialise(int events, Scheduler* scheduler);
+    void operator()();
     void finished_event();
     
 private:
-    AlgoPool algo_pool_;
-    Scheduler scheduler_;
+    Scheduler* scheduler_;
     tbb::atomic<unsigned int> in_flight_;
     tbb::atomic<unsigned int> processed_; 
     unsigned int max_concurrent_events_; 
     unsigned int events_;
 };
 
-
 class EventLoopManagerTask : public tbb::task {
-public:    
-    EventLoopManagerTask(EventLoopManager* manager): manager_(manager){};    
-    tbb::task* execute(){manager_->run();return NULL;};
-private:    
-    EventLoopManager* manager_;
-    
-};
+    public:    
+        EventLoopManagerTask(EventLoopManager* manager): manager_(manager){};    
+        tbb::task* execute(){(*manager_)();return NULL;};
+    private:    
+        EventLoopManager* manager_;
+        
+    };
 
 #endif

@@ -14,26 +14,27 @@
 
 
 tbb::task* AlgoTask::execute(){
-    bool successful = task_->algo_->body(task_->event_state_->context);
+    task_->algo_->body(task_->event_state_->context);
     scheduler_->algo_is_done(task_);
     //if (successful) task_->event_state_->algo_states[task_->algo_id_] = ACCEPT;
     //else task_->event_state_->algo_states[task_->algo_id_] = REJECT;
     return NULL;
 }
 
-Scheduler::Scheduler(Whiteboard& wb, unsigned int max_concurrent_events, AlgoPool& algo_pool, const std::vector<AlgoBase*>& algos, EventLoopManager* looper ) : 
-    algos_(algos), wb_(wb), new_events_queue_(), algo_pool_(algo_pool), 
-    event_loop_manager_(looper), has_to_stop_(false)
+Scheduler::Scheduler(Whiteboard& wb) : 
+    algos_(0), algo_pool_(0), wb_(wb), new_events_queue_(),  
+    loop_manager_(0), has_to_stop_()
 {
+    has_to_stop_ = false;
 }  
 
 
 std::vector<state_type> Scheduler::compute_dependencies() {
-    std::vector<state_type> all_requirements(algos_.size());
+    std::vector<state_type> all_requirements(algos_->size());
     // create the mapping productname : index
     std::map<std::string,unsigned int> product_indices;
-    for (unsigned int i = 0, n_algos = algos_.size(); i < n_algos; ++i) {
-        AlgoBase* algo = algos_[i];
+    for (unsigned int i = 0, n_algos = algos_->size(); i < n_algos; ++i) {
+        AlgoBase* algo = (*algos_)[i];
         const std::vector<std::string>& outputs = algo->get_outputs();
         for (unsigned int j = 0, n_outputs = outputs.size(); j < n_outputs; ++j){
             product_indices[outputs[j]] = i;
@@ -41,10 +42,10 @@ std::vector<state_type> Scheduler::compute_dependencies() {
     }
     // use the mapping to create a bit pattern of input requirements
     state_type termination_requirement(0);
-    for (unsigned int i = 0, n_algos = algos_.size(); i < n_algos; ++i) {
+    for (unsigned int i = 0, n_algos = algos_->size(); i < n_algos; ++i) {
         state_type requirements(0);
         //printf(" %i: %s\n",i,algos_[i]->get_name());
-        const std::vector<std::string>& inputs = algos_[i]->get_inputs();
+        const std::vector<std::string>& inputs = (*algos_)[i]->get_inputs();
         for (unsigned int j = 0, n_inputs = inputs.size(); j < n_inputs; ++j){
             unsigned int input_index = product_indices[inputs[j]];
             requirements[input_index] = true;
@@ -57,14 +58,13 @@ std::vector<state_type> Scheduler::compute_dependencies() {
     return all_requirements;  
 }
 
-// check for finished tasks, free the used algo instances and delete the AlgoTaskId
-void Scheduler::task_cleanup(){    
+// check for finished tasks, update event state and delete the AlgoTaskId
+void Scheduler::task_cleanup(){   
     AlgoTaskId* result(0);
     bool queue_full(false);
     do {
         queue_full = done_queue_.try_pop(result);
         if (queue_full) {
-            algo_pool_.release(result->algo_, result->algo_id_);
             state_type new_bits(result->event_state_->state); 
             new_bits[result->algo_id_] = true;
             result->event_state_->state = new_bits;
@@ -75,29 +75,29 @@ void Scheduler::task_cleanup(){
 }
 
 void Scheduler::algo_is_done(AlgoTaskId* result){
-    //algo_pool_.release(result->algo_, result->algo_id_);
+    algo_pool_->release(result->algo_, result->algo_id_);
+    done_queue_.push(result);
     //state_type new_bits(result->event_state_->state); 
     //new_bits[result->algo_id_] = true;
-    //tbb::queuing_mutex::scoped_lock lock;
-    //lock.acquire(task_callback_mutex_);
-    //result->event_state_->state = new_bits;
-    //lock.release();    
+    //result->event_state_->state = new_bits;  
     //delete result;
-    
-    done_queue_.push(result);
 }
 
 void Scheduler::start_event(unsigned int event_number){
     new_events_queue_.push(event_number);
 }
 
-void Scheduler::initialise(){}
+void Scheduler::initialise(AlgoPool* algo_pool, const std::vector<AlgoBase*>* algos, EventLoopManager* loop_manager){
+    algo_pool_ = algo_pool;
+    algos_ = algos;
+    loop_manager_ = loop_manager;
+}
 
-void Scheduler::run(){
+void Scheduler::operator()(){
     //get the bit patterns and sort by node id (like the available algos)
     std::vector<state_type> bits = compute_dependencies();   
     // some book keeping vectors
-    size_t size = algos_.size();
+    size_t size = algos_->size();
     std::vector<EventState*> event_states(0); //TODO - has to move to init 
     do {        
         // BEGIN TODO: replace by thread safe code in start event
@@ -117,7 +117,6 @@ void Scheduler::run(){
                 } 
             }
         } while(queue_full);
-
         
         for (unsigned int algo = 0; algo < size; ++algo) {
             // loop through all currently active events
@@ -135,34 +134,28 @@ void Scheduler::run(){
                     // is there an available Algo instance one can use?
                     AlgoBase* algo_instance(0);
                     bool algo_free(0);
-                    algo_free = algo_pool_.acquire(algo_instance, algo);
+                    algo_free = algo_pool_->acquire(algo_instance, algo);
                     if (algo_free) { ; 
-                        AlgoTaskId* task = new AlgoTaskId(algos_[algo],algo,event_state);    
+                        AlgoTaskId* task = new AlgoTaskId((*algos_)[algo],algo,event_state);    
                         tbb::task* t = new( tbb::task::allocate_root() ) AlgoTask(task, this);
                         tbb::task::enqueue( *t); 
                         algo_states[algo] = SCHEDULED;
                     }
                 }
             }
-        }
-        
+        }        
         task_cleanup();
-        
         // check for finished events and clean up
         for (std::vector<EventState*>::iterator i = event_states.begin(), end = event_states.end(); i != end; ++i){
             if ((*i)->state == termination_requirement_) {
                 Context*& context = (*i)->context;
                 wb_.release_context(context);
-                event_loop_manager_->finished_event();
+                loop_manager_->finished_event();
                 delete (*i);
                 i = event_states.erase(i);
             }
         }
-
-        
         std::this_thread::yield();  
-        
-        
     } while (not has_to_stop_);
     return;
 };
