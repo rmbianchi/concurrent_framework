@@ -13,13 +13,11 @@
 
 
 Skep::Skep(unsigned int events, unsigned int n_parallel_, unsigned int n_wb_slots) : 
-events_(events), n_parallel_(n_parallel_), n_wb_slots_(n_wb_slots), scheduler_(wb_), wb_("Central Whiteboard", n_wb_slots)
-
-{
+events_(events), n_parallel_(n_parallel_), n_wb_slots_(n_wb_slots), 
+event_loop_(n_parallel_), scheduler_(wb_), wb_("Central Whiteboard", n_wb_slots) {
     // inititalise the setup
     algos_ = lhcbChain();
     algo_pool_ = AlgoPool(algos_,std::vector<int>(algos_.size(),1));
-    event_loop_ = EventLoopManager(n_parallel_);
     event_loop_.initialise(events, &scheduler_);
     scheduler_.initialise(&algo_pool_, &algos_, &event_loop_);    
     // now get things started

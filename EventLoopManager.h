@@ -17,14 +17,11 @@
 #include "Whiteboard.h"
 
 class EventLoopManager{
-    
 public:
-    EventLoopManager(){};
     EventLoopManager(const unsigned int n_parallel);
     void initialise(int events, Scheduler* scheduler);
     void operator()();
     void finished_event();
-    
 private:
     Scheduler* scheduler_;
     tbb::atomic<unsigned int> in_flight_;
@@ -33,13 +30,13 @@ private:
     unsigned int events_;
 };
 
+
 class EventLoopManagerTask : public tbb::task {
     public:    
         EventLoopManagerTask(EventLoopManager* manager): manager_(manager){};    
-        tbb::task* execute(){(*manager_)();return NULL;};
+        tbb::task* execute() { (*manager_)();return NULL; };
     private:    
-        EventLoopManager* manager_;
-        
-    };
+        EventLoopManager* manager_;        
+};
 
 #endif

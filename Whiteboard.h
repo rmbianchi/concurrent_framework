@@ -11,7 +11,6 @@
 
 
 // include tbb
-#include "tbb/spin_mutex.h"
 #include "tbb/concurrent_hash_map.h"
 // include c++
 #include <list>
@@ -21,17 +20,14 @@
 #include "ConcurrentTypes.h"
 #include "Context.h"
 
-// forward declarations
-class Subscriber;
+
+enum ContextStatus {available, in_use, in_cleanup};
 
 /**
  * the Whiteboard class features a concurrent_hash_map to store published products
  * from modules.
  * As opposed to operations done via Context this class is not thread safe.
  */
-
-enum ContextStatus {available, in_use, in_cleanup};
-
 class Whiteboard {
 public:
     Whiteboard( const char* name, const int number_of_slots);
@@ -45,12 +41,10 @@ public:
     bool get_context(Context*&);
     void release_context(Context*& context);
     unsigned int register_dependency(const std::string& label); // registers a dependency and returns the index in the later used bit mask
-
 private:
     const char* name_;
     const int number_of_slots_;
     unsigned int data_id_counter_;
-    tbb::spin_mutex my_mutex;
     std::vector<StringDataMap*> slots_;
     typedef std::pair<Context*,ContextStatus> registry_type;
     std::vector<registry_type> contexts_; 

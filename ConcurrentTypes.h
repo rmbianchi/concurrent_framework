@@ -10,7 +10,7 @@
 
 // include c++
 #include <string>
-// TBB headers
+// include tbb
 #include "tbb/concurrent_hash_map.h"
 
 // use unsigned int as DataItem

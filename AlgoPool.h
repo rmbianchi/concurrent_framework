@@ -25,7 +25,6 @@ public:
     AlgoPool(const std::vector<AlgoBase*>& algos, const std::vector<int> max_instances);
     bool acquire(AlgoBase*& algo, const unsigned int algo_id);
     void release(AlgoBase*& algo, const unsigned int algo_id);
-    
 private:
     std::vector<tbb::concurrent_queue<AlgoBase*>*> available_algo_instances_;
 
