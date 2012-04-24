@@ -10,11 +10,11 @@
 
 // include c++
 #include <string>
-// TBB headers
+// include tbb
 #include "tbb/concurrent_hash_map.h"
 
-// use int as DataItem
-typedef int DataItem;
+// use unsigned int as DataItem
+typedef unsigned int DataItem;
 
 // Hash&Compare functions for various types used
 // TODO: replace the string hash by a better implementation, murmur etc.
@@ -30,6 +30,8 @@ struct StringHashCompare {
   }
 };
 
+typedef tbb::concurrent_hash_map<std::string, unsigned int, StringHashCompare> StringUIntMap;
+typedef tbb::concurrent_hash_map<std::string, int, StringHashCompare> StringIntMap;
 typedef tbb::concurrent_hash_map<std::string, DataItem, StringHashCompare> StringDataMap;
 
 #endif /* CONCURRENTTYPES_H_ */
