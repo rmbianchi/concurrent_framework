@@ -9,9 +9,13 @@ find_package(TBB REQUIRED)
 #---Packages------------------------------------------------------------------------
 
 #--Examples-------------------------------------------------------------------------
-include_directories(${TBB_INCLUDE_DIR})
+include_directories(${TBB_INCLUDE_DIR} )
 
-add_executable(CF4HepTaskBitsDemonstrator taskbits_example.cpp Whiteboard.cpp Context.cpp Scheduler.cpp AlgoPool.cpp EventLoopManager.cpp Skep.cpp)
+add_executable(CF4HepTaskBitsDemonstrator 
+               taskbits_example.cpp 
+               Whiteboard.cpp Context.cpp Scheduler.cpp AlgoPool.cpp EventLoopManager.cpp Skep.cpp 
+               Whiteboard.h   Context.h   Scheduler.h   AlgoPool.h   EventLoopManager.h   Skep.h
+               Algo.h ConcurrentTypes.h ExampleChains.h Helpers.h LHCbGraph.h SequenceManager.h )
 target_link_libraries(CF4HepTaskBitsDemonstrator ${TBB_LIBRARIES})
 
 #---Configuration-------------------------------------------------------------------
