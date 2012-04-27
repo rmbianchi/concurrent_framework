@@ -6,8 +6,10 @@
 //  Copyright (c) 2012 CERN. All rights reserved.
 //
 
-#include "EventLoopManager.h"
+// include tbb
 #include "tbb/compat/thread"
+// include fwk
+#include "EventLoopManager.h"
 
 EventLoopManager::EventLoopManager(const unsigned int n_parallel) : 
 in_flight_(), processed_(),

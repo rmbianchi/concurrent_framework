@@ -12,9 +12,9 @@
 // include c++
 # include <iostream>
 # include <cstdio>
-// include internals
+// include fwk
 #include "Whiteboard.h"
-
+// include tbb
 #include "tbb/queuing_mutex.h"
 
 

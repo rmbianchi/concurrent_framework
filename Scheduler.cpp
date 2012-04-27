@@ -44,12 +44,12 @@ std::vector<state_type> Scheduler::compute_dependencies() {
     state_type termination_requirement(0);
     for (unsigned int i = 0, n_algos = algos_->size(); i < n_algos; ++i) {
         state_type requirements(0);
-        //printf(" %i: %s\n",i,algos_[i]->get_name());
+        printf(" %i: %s\n",i,(*algos_)[i]->get_name());
         const std::vector<std::string>& inputs = (*algos_)[i]->get_inputs();
         for (unsigned int j = 0, n_inputs = inputs.size(); j < n_inputs; ++j){
             unsigned int input_index = product_indices[inputs[j]];
             requirements[input_index] = true;
-            //printf("\tconnecting to %s (via '%s')\n", algos_[input_index]->get_name(), inputs[j].c_str());
+            printf("\tconnecting to %s (via '%s')\n", (*algos_)[input_index]->get_name(), inputs[j].c_str());
         }
         all_requirements[i] = requirements;
         termination_requirement[i] = true;
@@ -118,6 +118,7 @@ void Scheduler::operator()(){
             }
         } while(queue_full);
         
+        // loop over algos
         for (unsigned int algo = 0; algo < size; ++algo) {
             // loop through all currently active events
             for (unsigned int event_id = 0; event_id < event_states.size() ; ++event_id) {
@@ -131,11 +132,13 @@ void Scheduler::operator()(){
                 // ... and whether the algo was previously started
                 std::vector<AlgoState>& algo_states = event_state->algo_states;
                 if ((tmp==0) && (algo_states[algo] == NOT_RUN)) {
+                    printf("deps ok and algo not run yet. Looking for a free instance...\n");
                     // is there an available Algo instance one can use?
                     AlgoBase* algo_instance(0);
                     bool algo_free(0);
-                    algo_free = algo_pool_->acquire(algo_instance, algo);
+                    algo_free = algo_pool_->acquire(algo_instance, algo); // taking a free instance if any
                     if (algo_free) { ; 
+                        printf("ok, found a free instane, we schedule it as a tbb::task\n");
                         AlgoTaskId* task = new AlgoTaskId((*algos_)[algo],algo,event_state);    
                         tbb::task* t = new( tbb::task::allocate_root() ) AlgoTask(task, this);
                         tbb::task::enqueue( *t); 
