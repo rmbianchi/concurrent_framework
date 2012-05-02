@@ -26,7 +26,7 @@ PLEASE NOTICE: TBB bugfix!!!
 
 (Still valid with TBB 4.0 Update 4)
 
-Including "tbb/flow_graph.h" in more than one file in the same project will lead to Linker error about "duplicate symbol".
+Including `"tbb/flow_graph.h"` in more than one file in the same project will lead to Linker error about "duplicate symbol".
 
 To fix it, you have to edit the "flow_graph.h" header file in the TBB distribution you installed on your machine.
 Please follow instructions from the official TBB Forum at:
