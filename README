@@ -20,4 +20,32 @@ This project provides a concurrent whiteboard and a few implementations of paral
  3) taskbits_example.cpp uses tbb:task directly and uses each one bit per algorithm to descripe the state of the event. 
  
 The implementations 2) and 3) provide a feature to deal with limited resources/ non-reentrant algorithms. 
- 
+
+
+PLEASE NOTICE: TBB bugfix!!! 
+============================
+
+(Still valid with TBB 4.0 Update 4)
+
+Including "tbb/flow_graph.h" in more than one file in the same project will lead to Linker error about "duplicate symbol".
+
+To fix it, you have to edit the "flow_graph.h" header file in the TBB distribution you installed on your machine.
+Please follow instructions from the official TBB Forum at:
+http://software.intel.com/en-us/forums/showthread.php?t=103695
+
+In two words: you have to edit the header file to add an "inline" declaration at 2 methods, i.e. changing these two lines::
+
+    void register_node(graph_node *n); 
+    void remove_node(graph_node *n);
+
+into these:
+
+    inline void register_node(graph_node *n); 
+    inline void remove_node(graph_node *n);
+
+The bugfix will be included in one of the next TBB releases.
+
+
+
+
+
