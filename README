@@ -32,15 +32,13 @@ To fix it, you have to edit the "flow_graph.h" header file in the TBB distributi
 Please follow instructions from the official TBB Forum at:
 http://software.intel.com/en-us/forums/showthread.php?t=103695
 
-In two words: you have to edit the header file to add an "inline" declaration at 2 methods, i.e. changing these two lines::
-
+In two words: you have to edit the header file to add an "inline" declaration at 2 methods, i.e. changing these two lines:
 ```
 void register_node(graph_node *n); 
 void remove_node(graph_node *n);
 ```
 
 into these:
-
 ```c++
 inline void register_node(graph_node *n); 
 inline void remove_node(graph_node *n);
