@@ -6,11 +6,12 @@
 //  Copyright (c) 2012 CERN. All rights reserved.
 //
 
-// include tbb
-#include "tbb/compat/thread"
+
 // include fwk
 #include "EventLoopManager.h"
 #include "Scheduler.h"
+// include user implementation of a Sequence
+#include "UserSequenceExample1.h"
 
 
 tbb::task* AlgoTask::execute(){
@@ -99,7 +100,14 @@ void Scheduler::operator()(){
     // some book keeping vectors
     size_t size = algos_->size();
     std::vector<EventState*> event_states(0); //TODO - has to move to init 
-    do {        
+    
+    int n_iteration = 0;
+    
+    do { 
+        
+        printf("\n**************\nmain do-while-loop iteration: %i\n", n_iteration);
+        
+        
         // BEGIN TODO: replace by thread safe code in start event
         // loop through all events that need to be started
         bool queue_full(false);
@@ -118,10 +126,36 @@ void Scheduler::operator()(){
             }
         } while(queue_full);
         
+        
+        
+        /* main graph for the event: we will connect all 
+         the SequenceManager instances to it
+         */
+        printf("creating the main graph for the event\n");
+        tbb::flow::graph g;
+        
+        // create an instance of the user Sequence
+        printf("creating a user custom Sequence\n");        
+        MyUserSequence my_seq = MyUserSequence("ric_seq", g, *algos_);
+        
+        // run the graph and all the sequences attached to it
+        printf("launching the main graph\n");                
+        g.run(my_seq);
+        
+        
         // loop over algos
+        printf("\nlooping over %lu algos\n", size);
         for (unsigned int algo = 0; algo < size; ++algo) {
+            
+            printf("algo n: %i\n", algo);
+            
             // loop through all currently active events
+            printf("looping over all %lu currently active events\n", event_states.size());
             for (unsigned int event_id = 0; event_id < event_states.size() ; ++event_id) {
+                
+                printf("event_id: %i\n", event_id);
+                
+                
                 EventState*& event_state = event_states[event_id];
                 // extract event_id specific quantities
                 state_type& current_event_bits = event_state->state;
@@ -129,25 +163,28 @@ void Scheduler::operator()(){
                 state_type tmp = (current_event_bits & bits[algo]) ^ bits[algo];
                 /// ...whether all required products are there...
                 
-                // ... and whether the algo was previously started
+                // ... and whether the algo was not previously started yet
                 std::vector<AlgoState>& algo_states = event_state->algo_states;
                 if ((tmp==0) && (algo_states[algo] == NOT_RUN)) {
-                    printf("deps ok and algo not run yet. Looking for a free instance...\n");
+                    printf("\tdeps ok and algo not run yet. Looking for a free instance...\n");
+                    
                     // is there an available Algo instance one can use?
                     AlgoBase* algo_instance(0);
                     bool algo_free(0);
                     algo_free = algo_pool_->acquire(algo_instance, algo); // taking a free instance if any
                     if (algo_free) { ; 
-                        printf("ok, found a free instane, we schedule it as a tbb::task\n");
+                        printf("\t\tok, found a free instance, we schedule it as a tbb::task\n");
                         AlgoTaskId* task = new AlgoTaskId((*algos_)[algo],algo,event_state);    
                         tbb::task* t = new( tbb::task::allocate_root() ) AlgoTask(task, this);
                         tbb::task::enqueue( *t); 
                         algo_states[algo] = SCHEDULED;
                     }
                 }
-            }
-        }        
+            } // end of loop over all active events
+        } // end of loop over all algos 
+        
         task_cleanup();
+        
         // check for finished events and clean up
         for (std::vector<EventState*>::iterator i = event_states.begin(), end = event_states.end(); i != end; ++i){
             if ((*i)->state == termination_requirement_) {
@@ -158,7 +195,11 @@ void Scheduler::operator()(){
                 i = event_states.erase(i);
             }
         }
-        std::this_thread::yield();  
+        std::this_thread::yield(); 
+        
+        // updating loop counter
+        ++n_iteration;
+        
     } while (not has_to_stop_);
     return;
 };

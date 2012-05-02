@@ -33,7 +33,7 @@ void EventLoopManager::operator()(){
             scheduler_->start_event(processed_+in_flight_);
             ++in_flight_;
         }
-        std::this_thread::yield();
+        std::this_thread::yield(); // defined in "tbb/compat/thread"
     } while (processed_ < events_);
-    scheduler_->stop();
+    scheduler_->stop(); // stop the loop over algos and events
 }

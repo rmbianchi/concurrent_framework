@@ -3,26 +3,26 @@
 //  
 //
 //  Created by Benedikt Hegner on 4/14/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 CERN. All rights reserved.
 //
 
-// include tbb
-#include "tbb/tbb.h"
+
 // include fwk
-#include "LHCbGraph.h"
-#include "ricGraph.h"
-#include "ExampleChains.h"
 #include "Skep.h"
+#include "ExampleChains.h"
+//#include "LHCbGraph.h"
 
 
 Skep::Skep(unsigned int events, unsigned int n_parallel_, unsigned int n_wb_slots) : 
 events_(events), n_parallel_(n_parallel_), n_wb_slots_(n_wb_slots), 
 event_loop_(n_parallel_), scheduler_(wb_), wb_("Central Whiteboard", n_wb_slots) {
     
-    // inititalise the setup
+    // initialise the setup
     //algos_ = lhcbChain();
     algos_ = exampleChain1();
-    //algos_ = ricChain();
+    
+    
+    
     
     algo_pool_ = AlgoPool(algos_,std::vector<int>(algos_.size(),1));
     event_loop_.initialise(events, &scheduler_);
@@ -36,7 +36,7 @@ event_loop_(n_parallel_), scheduler_(wb_), wb_("Central Whiteboard", n_wb_slots)
     //tg.run(event_loop_);
     //tg.run(scheduler_);
     //tg.wait( );
-
+    
 }
 
 Skep::~Skep(){
@@ -44,3 +44,4 @@ Skep::~Skep(){
         delete algos_[i];
     }
 }
+

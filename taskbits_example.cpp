@@ -26,14 +26,9 @@ int schedule(unsigned int events, unsigned int n_parallel) {
     timestamp_t tstart = get_timestamp();
     
     // set up the scheduler
-    Skep skep(events, n_parallel, 100);
-
-    tbb::spin_mutex::scoped_lock lock;
+    Skep skep(events, n_parallel, 1);
     
-    // wait for all jobs completing
-    lock.acquire(my_mutex);
     printf("\nWaiting for all completing\n");
-    lock.release();
     
     // time it
     timestamp_t tstop = get_timestamp();
@@ -63,8 +58,8 @@ int main(int argc, char *argv[]) {
 
     
     // declaring a Whiteboard instance with a number of internal slots
-    unsigned int events(4000);
-    unsigned int n_parallel(20);
+    unsigned int events(1); // 4000
+    unsigned int n_parallel(1); // 20
     
     bool test = false;
     if ( argc > 3 && atoi(argv[3]) == 1 ) test = true;

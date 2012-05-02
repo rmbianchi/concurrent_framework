@@ -10,14 +10,14 @@ set THIS="`dirname ${ARGS[2]}`"
 
 #----LD_LIBRARY_PATH-----------------------------------------------------------------
 if ($?LD_LIBRARY_PATH) then
-   setenv LD_LIBRARY_PATH /opt/intel/tbb/tbb40_297oss/lib/lib:$LD_LIBRARY_PATH      # Linux, ELF HP-UX
+   setenv LD_LIBRARY_PATH /opt/intel/tbb/tbb40_20120408oss/lib/lib:$LD_LIBRARY_PATH      # Linux, ELF HP-UX
 else
-   setenv LD_LIBRARY_PATH /opt/intel/tbb/tbb40_297oss/lib/lib
+   setenv LD_LIBRARY_PATH /opt/intel/tbb/tbb40_20120408oss/lib/lib
 endif
 
 #----DYLD_LIBRARY_PATH---------------------------------------------------------------
 if ($?DYLD_LIBRARY_PATH) then
-   setenv DYLD_LIBRARY_PATH /opt/intel/tbb/tbb40_297oss/lib/lib:$DYLD_LIBRARY_PATH  # Mac OS X
+   setenv DYLD_LIBRARY_PATH /opt/intel/tbb/tbb40_20120408oss/lib/lib:$DYLD_LIBRARY_PATH  # Mac OS X
 else
-   setenv DYLD_LIBRARY_PATH /opt/intel/tbb/tbb40_297oss/lib/lib
+   setenv DYLD_LIBRARY_PATH /opt/intel/tbb/tbb40_20120408oss/lib/lib
 endif

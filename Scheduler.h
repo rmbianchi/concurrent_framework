@@ -18,23 +18,30 @@
 #include "tbb/concurrent_queue.h"
 #include "tbb/concurrent_vector.h"
 #include "tbb/task.h"
+//#include "tbb/flow_graph.h"
+#include "tbb/compat/thread"
 //include fwk
 #include "Algo.h"
 #include "AlgoPool.h"
 #include "Context.h"
+#include "Sequence.h"
+
 
 //typedef uint64_t state_type;
 typedef std::bitset<1000> state_type;
 
+
 // forward declarations
 class Scheduler;
 class EventLoopManager;
-
-/**
- * The AlgoTaskId the item used for call back once tbb finished the AlgoTask
- */
 class EventState;
 
+
+
+/**
+ * The AlgoTaskId the item used for call back once tbb finished the AlgoTask.
+ * It combines the pointer to the algorithm/module with the EventState
+ */
 class AlgoTaskId {
 public:
     AlgoTaskId(AlgoBase* algo, unsigned int algo_id, EventState* event_state): algo_(algo),algo_id_(algo_id), event_state_(event_state){};
@@ -56,6 +63,10 @@ public:
 };
 
 
+/**
+ * The class storing the state of an event and the states of the 
+ * algorithms/modules for that event.
+ */
 class EventState{
 public:
     EventState(unsigned int algos) : state(0), context(0), algo_states(algos,NOT_RUN){};
@@ -65,6 +76,10 @@ public:
     std::vector<AlgoState> algo_states;
 };
 
+
+/**
+ * The class which schedules and handles all the tasks for algorithms/modules
+ */
 class Scheduler {
 public:
     Scheduler(Whiteboard& wb);
@@ -86,6 +101,10 @@ private:
     tbb::atomic<bool> has_to_stop_;
 };
 
+
+/**
+ * The class handling the task for the main scheduler.
+ */
 class SchedulerTask : public tbb::task {
     public:    
         SchedulerTask(Scheduler* scheduler): scheduler_(scheduler){};    

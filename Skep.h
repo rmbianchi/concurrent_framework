@@ -16,10 +16,15 @@
 #include "Whiteboard.h"
 
 
+// include tbb
+#include "tbb/tbb.h"
+
 class Skep {
 public:
     Skep(unsigned int events, unsigned int n_parallel_, unsigned int n_wb_slots);
     virtual ~Skep();
+    
+    
 private:
     const unsigned int events_;
     const unsigned int n_parallel_;
@@ -29,7 +34,7 @@ private:
     Whiteboard wb_;
     std::vector<AlgoBase*> algos_;
     AlgoPool algo_pool_;
-    
+        
 };
 
 

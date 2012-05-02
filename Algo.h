@@ -47,11 +47,11 @@ public:
     bool body(Context *context) {
         unsigned int event(0);
         context->read(event, "event");
-        //printf("Algo '%s' - begin - EVENT: %i\n", name_, event);
+        printf("\t\t\tAlgo '%s' - begin - EVENT: %i\n", name_, event);
         sleep(time_);
         read(context);
         publish(context);
-        //printf("Algo '%s' - end - EVENT: %i\n", name_, event);
+        printf("\t\t\tAlgo '%s' - end - EVENT: %i\n", name_, event);
         return true;
     };
     const std::vector<std::string> get_inputs() const {return inputs_;};
