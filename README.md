@@ -18,9 +18,9 @@ About:
 
 This project provides a concurrent whiteboard and a few implementations of parallel algorithm/module scheduling for HEP on top of Intel's TBB:
 
- 1) ```dependency_graph.cpp``` uses ```tbb::flow::graph```. A few additions to TBB were necessary
- 2) ```taskgraph_example.cpp``` uses ```tbb:task``` directly and uses N copies of the algorithm dependency DAG to handle N events in parallel
- 3) ```taskbits_example.cpp``` uses ```tbb:task``` directly and uses each one bit per algorithm to descripe the state of the event. 
+ 1. ```dependency_graph.cpp``` uses ```tbb::flow::graph```. A few additions to TBB were necessary
+ 2. ```taskgraph_example.cpp``` uses ```tbb:task``` directly and uses N copies of the algorithm dependency DAG to handle N events in parallel
+ 3. ```taskbits_example.cpp``` uses ```tbb:task``` directly and uses each one bit per algorithm to descripe the state of the event. 
  
 The implementations 2) and 3) provide a feature to deal with limited resources/ non-reentrant algorithms. 
 
