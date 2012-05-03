@@ -138,12 +138,13 @@ void Scheduler::operator()(){
         printf("creating a user custom Sequence\n");        
         MyUserSequence my_seq = MyUserSequence("ric_seq", g, *algos_);
         
-        // run the graph and all the sequences attached to it
-        printf("launching the main graph\n");                
-        g.run(my_seq);
+        
+//        // run the graph and all the sequences attached to it
+//        printf("launching the main graph\n");                
+//        g.run(my_seq);
         
         
-        // loop over algos
+        // loop over Sequence algos
         printf("\nlooping over %lu algos\n", size);
         for (unsigned int algo = 0; algo < size; ++algo) {
             
@@ -157,8 +158,10 @@ void Scheduler::operator()(){
                 
                 
                 EventState*& event_state = event_states[event_id];
+                
                 // extract event_id specific quantities
                 state_type& current_event_bits = event_state->state;
+                
                 // check whether all dependencies for the algorithm are fulfilled...
                 state_type tmp = (current_event_bits & bits[algo]) ^ bits[algo];
                 /// ...whether all required products are there...

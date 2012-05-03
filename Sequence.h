@@ -38,8 +38,11 @@ public:
     };
     virtual ~Sequence() {};
     inline void operator()() {
+        printf("Sequence:: calling setup()...\n");
         setup();
+        printf("Sequence:: calling make_my_sequence()...\n");
         make_my_sequence();
+        printf("Sequence:: calling try_put()...\n");
         m_startNode->try_put( tbb::flow::continue_msg() );
     };
     const char* getName() {return m_name_;};
@@ -91,7 +94,7 @@ class node_body {
 public:
     node_body( AlgoBase* p ) : my_algorithm(p) { }
     void operator()( tbb::flow::continue_msg ) {
-        //        my_algorithm->body();
+        //my_algorithm->body();
     }
 };
 

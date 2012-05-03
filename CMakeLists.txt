@@ -15,7 +15,7 @@ add_executable(CF4HepTaskBitsDemonstrator
                taskbits_example.cpp 
                Whiteboard.cpp Context.cpp Scheduler.cpp AlgoPool.cpp EventLoopManager.cpp Skep.cpp 
                Whiteboard.h   Context.h   Scheduler.h   AlgoPool.h   EventLoopManager.h   Skep.h
-               Sequence.h Sequence.cpp
+               Sequence.h Sequence.cpp AlgoGraph.h AlgoGraph.cpp UserSequenceExample1.cpp
                Algo.h ConcurrentTypes.h ExampleChains.h Helpers.h LHCbGraph.h SequenceManager.h )
 target_link_libraries(CF4HepTaskBitsDemonstrator ${TBB_LIBRARIES})
 

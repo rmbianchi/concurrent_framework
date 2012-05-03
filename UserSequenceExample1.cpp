@@ -59,9 +59,14 @@ void Sequence::make_my_sequence() {
     
     std::cout << " algo: " << algo_map_["algo0"]->get_name() << std::endl;
     
+    // make 2 nodes
+    m_created_nodes_[0] = new tbb::flow::function_node< tbb::flow::continue_msg, tbb::flow::continue_msg >( *m_graph, tbb::flow::serial, node_body( algo_map_["algo0"] ));
+    
+    m_created_nodes_[1] = new tbb::flow::function_node< tbb::flow::continue_msg, tbb::flow::continue_msg >( *m_graph, tbb::flow::serial, node_body( algo_map_["algo1"] ));
     
     
-    
+    // connect the 2 nodes with an edge
+    make_edge(*m_created_nodes_[0], *m_created_nodes_[1] );
     
     
 }
